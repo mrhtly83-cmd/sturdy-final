@@ -252,12 +252,13 @@ function AppContent() {
 export default function Home() {
   return (
     <div className="relative min-h-screen w-full font-sans text-white overflow-y-auto">
-      {/* THERAPEUTIC BACKGROUND: Warm Sunlight/Nature */}
-      <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-70">
-        <source src="https://cdn.coverr.co/videos/coverr-sunlight-through-trees-in-forest-4486/1080p.mp4" type="video/mp4" />
+      {/* THERAPEUTIC BACKGROUND: Pexels Video 3120662 */}
+      {/* Note: Using the Pexels Download link as Source */}
+      <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60">
+        <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
       </video>
       {/* Warm Overlay filter */}
-      <div className="fixed top-0 left-0 w-full h-full bg-stone-900/30 mix-blend-multiply -z-10" />
+      <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />
 
       <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-white/80 font-medium">Preparing your space...</div>}>
         <AppContent />
