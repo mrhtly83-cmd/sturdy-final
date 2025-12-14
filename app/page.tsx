@@ -188,4 +188,17 @@ export default function Home() {
                   <Volume2 className="w-4 h-4" /> Suggested Script
                 </h3>
                 <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-slate-200">
-                  {copiedId === 'current' ? <Check className="w-4 h-
+                  {copiedId === 'current' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-lg leading-relaxed font-medium whitespace-pre-wrap">{completion}</p>
+            </div>
+          )}
+        </div>
+
+        {/* HISTORY SECTION */}
+        {history.length > 0 && (
+          <div className="w-full max-w-md mt-6 pb-10">
+            <button 
+              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              className="w
