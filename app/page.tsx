@@ -1,35 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCompletion } from 'ai/react';
-import { Brain, Sparkles, Send, Volume2 } from 'lucide-react';
+import { Brain, Sparkles, Send, Volume2, History, Clock } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Database connection
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Home() {
   const [childAge, setChildAge] = useState('5');
+  const [history, setHistory] = useState<any[]>([]); // Store past scripts
+  
   const { complete, completion, isLoading } = useCompletion({
     api: '/api/generate-script',
+    onFinish: () => {
+      // When AI finishes, refresh the history list
+      fetchHistory();
+    }
   });
 
+  // Load history when app starts
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  async function fetchHistory() {
+    const { data } = await supabase
+      .from('generated_scripts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5); // Get last 5 scripts
+    
+    if (data) setHistory(data);
+  }
+
   return (
-    <div className="relative min-h-screen w-full overflow-hidden font-sans text-white">
+    <div className="relative min-h-screen w-full font-sans text-white overflow-y-auto">
       {/* 1. BACKGROUND VIDEO */}
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="absolute top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60"
+        className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60"
       >
         <source src="https://cdn.coverr.co/videos/coverr-cloudy-sky-2765/1080p.mp4" type="video/mp4" />
       </video>
 
-      {/* 2. DARK OVERLAY (To make text readable) */}
-      <div className="absolute top-0 left-0 w-full h-full bg-black/40 -z-10" />
+      {/* 2. DARK OVERLAY */}
+      <div className="fixed top-0 left-0 w-full h-full bg-black/40 -z-10" />
 
-      {/* 3. MAIN CONTENT (Glassmorphism Card) */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
+      {/* 3. MAIN CONTENT */}
+      <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pb-20">
         
-        <div className="w-full max-w-md bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-3xl shadow-2xl">
+        <div className="w-full max-w-md bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-3xl shadow-2xl mt-8">
           
           <header className="flex items-center gap-3 mb-8">
             <div className="p-3 bg-blue-500/80 rounded-2xl shadow-lg">
@@ -86,7 +114,35 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="mt-8 text-white/40 text-sm">Powered by Sturdy AI</p>
+        {/* 4. HISTORY SECTION */}
+        {history.length > 0 && (
+          <div className="w-full max-w-md mt-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <h2 className="flex items-center gap-2 text-white/60 font-semibold mb-4 ml-2">
+              <History className="w-4 h-4" /> Recent Scripts
+            </h2>
+            <div className="space-y-4">
+              {history.map((item) => (
+                <div key={item.id} className="bg-black/40 backdrop-blur-sm border border-white/5 p-4 rounded-xl hover:bg-black/50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-medium text-blue-300 bg-blue-500/10 px-2 py-1 rounded-md">
+                      Age {item.age_group}
+                    </span>
+                    <span className="text-xs text-white/30 flex items-center gap-1">
+                       <Clock className="w-3 h-3" /> 
+                       {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-white/80 text-sm italic mb-2">"{item.situation}"</p>
+                  <p className="text-white text-md font-medium border-l-2 border-blue-500 pl-3">
+                    {item.script}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="mt-8 text-white/40 text-sm mb-8">Powered by Sturdy AI</p>
       </div>
     </div>
   );
