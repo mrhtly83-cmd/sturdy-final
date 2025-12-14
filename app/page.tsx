@@ -20,7 +20,7 @@ export default function Home() {
         playsInline
         className="absolute top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60"
       >
-        <source src="/background.mp4" type="video/mp4" />
+        <source src="https://cdn.coverr.co/videos/coverr-cloudy-sky-2765/1080p.mp4" type="video/mp4" />
       </video>
 
       {/* 2. DARK OVERLAY (To make text readable) */}
