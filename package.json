@@ -12,6 +12,7 @@
     "@ai-sdk/openai": "^2.0.86",
     "@supabase/supabase-js": "^2.87.1",
     "ai": "^3.4.33",
+    "firebase": "^12.6.0",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
     "openai": "^4.73.0",
