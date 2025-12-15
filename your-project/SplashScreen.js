@@ -8,14 +8,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-export default function SplashScreen() {
+export default function SplashScreen({ onDone }) {
   const iconOpacity = useRef(new Animated.Value(0)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Sequential animation
-    Animated.sequence([
+    const animation = Animated.sequence([
       Animated.timing(iconOpacity, {
         toValue: 1,
         duration: 800,
@@ -32,8 +32,17 @@ export default function SplashScreen() {
         delay: 300,
         useNativeDriver: true,
       }),
-    ]).start();
-  }, [iconOpacity, taglineOpacity, titleOpacity]);
+    ]);
+
+    animation.start(({ finished }) => {
+      if (!finished) return;
+      if (typeof onDone === 'function') onDone();
+    });
+
+    return () => {
+      animation.stop();
+    };
+  }, [iconOpacity, onDone, taglineOpacity, titleOpacity]);
 
   return (
     <View style={styles.container}>
