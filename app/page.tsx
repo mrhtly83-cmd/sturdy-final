@@ -3,11 +3,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useCompletion } from 'ai/react';
 import { useSearchParams } from 'next/navigation'; 
-// FIX: Renamed History to HistoryIcon to prevent the crash
 import { 
-  Heart, Sparkles, Home, Users, BookOpen, 
-  History as HistoryIcon, Copy, Check, Lock, 
-  MessageCircle, ArrowRight, Star
+  Heart, Home, Users, BookOpen, 
+  Copy, Check, Lock, 
+  MessageCircle, ArrowRight,
+  History // We will use this simply without renaming for safety
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -47,7 +47,6 @@ function AppContent() {
 
   // --- 1. HANDLE SPLASH SCREEN TIMER ---
   useEffect(() => {
-    // Show splash for 2.5 seconds, then reveal Welcome Screen
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2500);
@@ -60,7 +59,6 @@ function AppContent() {
       localStorage.setItem('sturdy-is-pro', 'true');
       setIsPro(true);
       window.history.replaceState(null, '', '/');
-      // If they just bought it, skip the welcome screen
       setShowWelcome(false); 
       alert("Welcome to the family! Lifetime Access Unlocked. ☀️");
     } else {
@@ -124,14 +122,15 @@ function AppContent() {
     }
   };
 
-  // --- RENDER: 1. SPLASH SCREEN ---
+  // --- RENDER: 1. SPLASH SCREEN (Custom SVG to prevent crash) ---
   if (showSplash) {
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
         <div className="relative animate-pulse">
-          {/* Creating the 'Asterisk' logo effect from video */}
-          <Star className="w-24 h-24 text-teal-500 fill-teal-500 animate-spin-slow duration-[3000ms]" />
-          <Sparkles className="w-12 h-12 text-teal-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          {/* Custom SVG Star to avoid Lucide import errors */}
+          <svg className="w-24 h-24 text-teal-500 animate-spin-slow duration-[3000ms]" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+          </svg>
         </div>
         <h1 className="text-teal-900 text-xl font-bold mt-6 tracking-widest animate-in fade-in duration-1000 slide-in-from-bottom-4">
           STURDY PARENT
@@ -225,7 +224,7 @@ function AppContent() {
                   onClick={handleGenerate}
                   className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Sparkles className="animate-spin w-5 h-5" /> : <Heart className="w-5 h-5 fill-white/20" />}
+                  <Heart className="w-5 h-5 fill-white/20" />
                   {isLoading ? 'Thinking...' : 'Generate Script'}
                 </button>
               </div>
@@ -288,7 +287,7 @@ function AppContent() {
                   onClick={handleGenerate}
                   className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
                 >
-                  {isLoading ? <Sparkles className="animate-spin w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+                   <MessageCircle className="w-5 h-5" />
                   {isLoading ? 'Rewriting...' : 'Neutralize Text'}
                 </button>
               </div>
@@ -340,7 +339,7 @@ function AppContent() {
             <span className="text-[10px] font-bold">Create</span>
           </button>
           <button onClick={() => setActiveTab('journal')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'}`}>
-            <HistoryIcon className="w-6 h-6" />
+            <History className="w-6 h-6" />
             <span className="text-[10px] font-bold">Journal</span>
           </button>
           <button onClick={() => setActiveTab('coparent')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'coparent' ? 'text-purple-300' : 'text-white/50'}`}>
