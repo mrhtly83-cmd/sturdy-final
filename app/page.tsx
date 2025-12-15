@@ -4,10 +4,10 @@ import { useState, useEffect, Suspense } from 'react';
 import { useCompletion } from 'ai/react';
 import { useSearchParams } from 'next/navigation'; 
 import { 
-  Heart, Home, Users, BookOpen, 
+  Heart, Home as HomeIcon, Users, BookOpen, 
   Copy, Check, Lock, 
   MessageCircle, ArrowRight,
-  History // We will use this simply without renaming for safety
+  History 
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -122,12 +122,12 @@ function AppContent() {
     }
   };
 
-  // --- RENDER: 1. SPLASH SCREEN (Custom SVG to prevent crash) ---
+  // --- RENDER: 1. SPLASH SCREEN ---
   if (showSplash) {
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
         <div className="relative animate-pulse">
-          {/* Custom SVG Star to avoid Lucide import errors */}
+          {/* Custom SVG Star */}
           <svg className="w-24 h-24 text-teal-500 animate-spin-slow duration-[3000ms]" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
           </svg>
@@ -335,7 +335,7 @@ function AppContent() {
       <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-white/10 pb-6 pt-3 px-6 z-40">
         <div className="flex justify-around items-center max-w-md mx-auto">
           <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'home' ? 'text-teal-300' : 'text-white/50'}`}>
-            <Home className="w-6 h-6" />
+            <HomeIcon className="w-6 h-6" />
             <span className="text-[10px] font-bold">Create</span>
           </button>
           <button onClick={() => setActiveTab('journal')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'}`}>
