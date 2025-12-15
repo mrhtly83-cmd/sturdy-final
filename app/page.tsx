@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useCompletion } from 'ai/react';
 import { useSearchParams } from 'next/navigation'; 
 import { 
@@ -23,6 +23,16 @@ type HistoryItem = {
 const FREE_LIMIT = 5; 
 const STRIPE_LINK = "https://buy.stripe.com/test_14A00c1WkbQU8EO2Tv2cg00"; 
 
+// --- DYNAMIC CONTENT MAP ---
+const strugglePlaceholders: { [key: string]: string } = {
+  'Big Emotions': 'Ex: She is screaming because the toy car broke...',
+  'Aggression': 'Ex: He hit his sister because she took his toy...',
+  'Resistance/Defiance': 'Ex: They are refusing to get dressed for school...',
+  'Siblings': 'Ex: The kids are fighting over who gets the blue cup...',
+  'Screen Time': 'Ex: He had a meltdown when I told him to turn off the iPad...',
+  'School & Anxiety': 'Ex: She cries every morning when I drop her off at school...',
+};
+
 function AppContent() {
   // --- APP FLOW STATE ---
   const [showSplash, setShowSplash] = useState(true);
@@ -35,11 +45,8 @@ function AppContent() {
   const [gender, setGender] = useState('Boy');
   const [ageGroup, setAgeGroup] = useState('School Age (5-10)');
   const [struggle, setStruggle] = useState('Big Emotions');
-  // NEW: Neurodiverse Profile State
   const [profile, setProfile] = useState('Neurotypical'); 
-  // NEW: Tone State
   const [tone, setTone] = useState('Balanced'); 
-  
   const [coparentText, setCoparentText] = useState('');
 
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
@@ -49,6 +56,12 @@ function AppContent() {
   const [usageCount, setUsageCount] = useState(0);
   const [isPro, setIsPro] = useState(false);
   const searchParams = useSearchParams();
+
+  // Dynamic Placeholder based on struggle selection
+  const currentPlaceholder = useMemo(() => {
+    return strugglePlaceholders[struggle] || 'What is happening in this moment?';
+  }, [struggle]);
+
 
   // --- 1. HANDLE SPLASH SCREEN TIMER ---
   useEffect(() => {
@@ -109,7 +122,6 @@ function AppContent() {
     if (activeTab === 'coparent') {
       complete('', { body: { message: coparentText, mode: 'coparent' } });
     } else {
-      // PASS NEW VARIABLES TO API
       const promptText = `Child: ${gender}, Group: ${ageGroup}, Struggle: ${struggle}. Profile: ${profile}. Tone: ${tone}. Situation: ${document.querySelector('textarea')?.value}`;
       complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle, profile, tone, mode: 'script' } });
     }
@@ -148,8 +160,9 @@ function AppContent() {
   if (showWelcome) {
     return (
       <div className="relative z-10 flex flex-col items-center justify-end min-h-screen pb-16 px-6 font-sans">
+        {/* UPDATED BACKGROUND VIDEO: Mother Holding Baby's Hands (Calm & Connected) */}
         <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10">
-          <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
+          <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
         </video>
         <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 via-black/20 to-transparent -z-10" />
 
@@ -190,51 +203,51 @@ function AppContent() {
         {activeTab === 'home' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
             <header className="mb-8 text-center mt-4">
-              <h1 className="text-3xl font-bold text-white drop-shadow-md">Find the Words</h1>
-              <p className="text-white/80 text-sm">Select a struggle, get a script.</p>
+              <h1 className="text-3xl font-bold text-white drop-shadow-md">The Script Creator</h1>
+              <p className="text-white/80 text-sm">Personalize your guidance for immediate impact.</p>
             </header>
 
-            <div className="bg-stone-900/40 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl">
+            {/* UPGRADED CARD DESIGN */}
+            <div className="bg-white/95 p-6 rounded-3xl shadow-2xl border-t-8 border-teal-500">
               <div className="space-y-4">
                 
                 {/* ROW 1: GENDER & AGE */}
                 <div className="grid grid-cols-2 gap-3">
-                  <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none text-sm">
-                    <option className="text-black">Boy</option>
-                    <option className="text-black">Girl</option>
+                  <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none text-sm">
+                    <option>Boy</option>
+                    <option>Girl</option>
                   </select>
-                  <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none text-sm">
-                    <option className="text-black">Toddler (1-4)</option>
-                    <option className="text-black">School Age (5-10)</option>
-                    <option className="text-black">Pre-Teen (11-13)</option>
-                    <option className="text-black">Teenager (14+)</option>
+                  <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none text-sm">
+                    <option>Toddler (1-4)</option>
+                    <option>School Age (5-10)</option>
+                    <option>Pre-Teen (11-13)</option>
+                    <option>Teenager (14+)</option>
                   </select>
                 </div>
                 
-                {/* ROW 2: STRUGGLE & PROFILE (New Feature) */}
+                {/* ROW 2: STRUGGLE & PROFILE */}
                 <div className="grid grid-cols-2 gap-3">
-                   {/* Struggle Dropdown */}
-                   <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none font-medium text-sm">
-                      <option className="text-black">Big Emotions</option>
-                      <option className="text-black">Aggression</option>
-                      <option className="text-black">Resistance/Defiance</option>
-                      <option className="text-black">Siblings</option>
-                      <option className="text-black">Screen Time</option>
-                      <option className="text-black">School & Anxiety</option>
+                   <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none font-medium text-sm">
+                      <option>Big Emotions</option>
+                      <option>Aggression</option>
+                      <option>Resistance/Defiance</option>
+                      <option>Siblings</option>
+                      <option>Screen Time</option>
+                      <option>School & Anxiety</option>
                     </select>
-                   {/* Neurodiverse Profile Dropdown (Premium Value) */}
-                    <select value={profile} onChange={(e) => setProfile(e.target.value)} className="w-full p-3 bg-teal-800/50 border border-teal-700/50 rounded-xl text-white outline-none font-medium text-sm">
-                        <option className="text-black">Neurotypical</option>
-                        <option className="text-black">ADHD</option>
-                        <option className="text-black">Autism</option>
-                        <option className="text-black">Highly Sensitive</option>
+                   {/* Neurodiverse Profile Dropdown (Premium Style) */}
+                    <select value={profile} onChange={(e) => setProfile(e.target.value)} className="w-full p-3 bg-teal-100 border border-teal-300 rounded-xl text-teal-800 outline-none font-medium text-sm shadow-sm">
+                        <option>Neurotypical</option>
+                        <option>ADHD</option>
+                        <option>Autism</option>
+                        <option>Highly Sensitive</option>
                     </select>
                 </div>
                 
-                {/* ROW 3: TONE SLIDER (New Feature) */}
+                {/* ROW 3: TONE SLIDER */}
                 <div className="space-y-2 pt-1">
-                    <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1 block">Desired Tone: {tone}</label>
-                    <div className="flex justify-between items-center text-xs text-white/70">
+                    <label className="text-xs font-bold text-gray-600 uppercase tracking-widest ml-1 block">Tone: {tone}</label>
+                    <div className="flex justify-between items-center text-xs text-gray-500">
                         <span>Gentle</span>
                         <span>Firm</span>
                     </div>
@@ -247,25 +260,45 @@ function AppContent() {
                             const val = parseInt(e.target.value);
                             setTone(val === 1 ? 'Gentle' : val === 3 ? 'Firm' : 'Balanced');
                         }}
-                        className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer range-lg accent-teal-500"
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-teal-600"
                     />
                 </div>
 
 
                 <textarea
-                  placeholder="What happened? (e.g. He won't put on shoes)"
-                  className="w-full p-4 bg-white/10 border border-white/10 rounded-xl min-h-[100px] text-white placeholder-white/50 outline-none resize-none"
+                  placeholder={currentPlaceholder}
+                  className="w-full p-4 bg-gray-100 border border-gray-300 rounded-xl min-h-[100px] text-gray-800 placeholder-gray-400 outline-none resize-none text-base shadow-inner focus:ring-2 focus:ring-teal-500"
                 />
 
                 <button
                   disabled={isLoading}
                   onClick={handleGenerate}
-                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transform hover:scale-[1.01] transition-all"
                 >
                   <Heart className="w-5 h-5 fill-white/20" />
                   {isLoading ? 'Thinking...' : 'Generate Script'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* RESULT CARD (UPGRADED DESIGN) */}
+        {(activeTab === 'home' || activeTab === 'coparent') && completion && (
+          <div className="max-w-md mx-auto bg-white/95 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4 overflow-hidden border border-gray-200">
+            {/* GRADIENT HEADER */}
+            <div className={`p-4 text-white font-bold flex justify-between items-center ${activeTab === 'coparent' ? 'bg-gradient-to-r from-purple-600 to-indigo-500' : 'bg-gradient-to-r from-teal-600 to-emerald-500'}`}>
+              <h3 className="uppercase text-xs tracking-widest flex items-center gap-2">
+                {activeTab === 'coparent' ? <MessageCircle className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
+                {activeTab === 'coparent' ? 'Neutral Message' : 'Suggested Script'}
+              </h3>
+              <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-black/20 transition-colors">
+                {copiedId === 'current' ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            {/* CONTENT */}
+            <div className="p-4 text-slate-800">
+                <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed">{completion}</p>
             </div>
           </div>
         )}
@@ -352,21 +385,6 @@ function AppContent() {
             </div>
           </div>
         )}
-
-        {/* RESULT CARD */}
-        {(activeTab === 'home' || activeTab === 'coparent') && completion && (
-          <div className="max-w-md mx-auto bg-white/95 text-slate-800 p-6 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest">
-                {activeTab === 'coparent' ? '✨ Neutral Version' : '✨ Suggested Script'}
-              </h3>
-              <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-slate-200">
-                {copiedId === 'current' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-            <p className="text-lg font-medium whitespace-pre-wrap">{completion}</p>
-          </div>
-        )}
       </div>
 
       {/* --- BOTTOM NAVIGATION BAR --- */}
@@ -407,7 +425,7 @@ function AppContent() {
 
       {/* BACKGROUNDS */}
       <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-40">
-        <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
+        <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
       </video>
       <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />
     </div>
