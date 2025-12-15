@@ -12,8 +12,17 @@ export default function SplashScreen({ onDone }) {
   const iconOpacity = useRef(new Animated.Value(0)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const taglineOpacity = useRef(new Animated.Value(0)).current;
+  const onDoneRef = useRef(onDone);
 
   useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
+    iconOpacity.setValue(0);
+    titleOpacity.setValue(0);
+    taglineOpacity.setValue(0);
+
     // Sequential animation
     const animation = Animated.sequence([
       Animated.timing(iconOpacity, {
@@ -36,13 +45,13 @@ export default function SplashScreen({ onDone }) {
 
     animation.start(({ finished }) => {
       if (!finished) return;
-      if (typeof onDone === 'function') onDone();
+      if (typeof onDoneRef.current === 'function') onDoneRef.current();
     });
 
     return () => {
       animation.stop();
     };
-  }, [iconOpacity, onDone, taglineOpacity, titleOpacity]);
+  }, [iconOpacity, taglineOpacity, titleOpacity]);
 
   return (
     <View style={styles.container}>
