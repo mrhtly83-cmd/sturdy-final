@@ -7,7 +7,7 @@ import {
   Heart, Home as HomeIcon, Users, BookOpen, 
   Copy, Check, Lock, 
   MessageCircle, ArrowRight,
-  History, Volume2, Lightbulb 
+  History, Volume2, Lightbulb, Zap 
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -33,18 +33,19 @@ const strugglePlaceholders: { [key: string]: string } = {
   'School & Anxiety': 'Ex: She cries every morning when I drop her off at school...',
 };
 
-// Function to parse the multi-part AI response
+// Function to parse the multi-part AI response (UPDATED FOR 4 SECTIONS)
 const parseCompletion = (completion: string) => {
     const parts = completion.split('###');
-    if (parts.length === 3) {
+    if (parts.length === 4) { // Look for 4 sections now
         return {
             script: parts[0].trim(),
             summary: parts[1].trim(),
             whyItWorks: parts[2].trim().split('*').filter(line => line.trim().length > 0).map(line => line.trim()),
+            troubleshooting: parts[3].trim().split('*').filter(line => line.trim().length > 0).map(line => line.trim()), // NEW
         };
     }
     // Fallback for co-parenting mode or unexpected format
-    return { script: completion, summary: null, whyItWorks: [] };
+    return { script: completion, summary: null, whyItWorks: [], troubleshooting: [] };
 };
 
 function AppContent() {
@@ -177,7 +178,6 @@ function AppContent() {
   if (showWelcome) {
     return (
       <div className="relative z-10 flex flex-col items-center justify-end min-h-screen pb-16 px-6 font-sans">
-        {/* UPDATED BACKGROUND VIDEO: Mother Holding Baby's Hands (Calm & Connected) */}
         <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10">
           <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
         </video>
@@ -214,18 +214,18 @@ function AppContent() {
     <div className="relative z-10 flex flex-col min-h-screen font-sans pb-24 animate-in fade-in duration-500">
       
       {/* CONTENT AREA */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 p-6 pt-4 overflow-y-auto">
         
         {/* TAB 1: HOME */}
         {activeTab === 'home' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <header className="mb-8 text-center mt-4">
-              <h1 className="text-3xl font-bold text-white drop-shadow-md">The Script Creator</h1>
-              <p className="text-white/80 text-sm">Personalize your guidance for immediate impact.</p>
+            <header className="mb-4 text-center mt-2">
+              <h1 className="text-4xl font-extrabold text-white drop-shadow-lg tracking-tight">The Script Creator</h1>
+              <p className="text-white/80 text-sm font-medium drop-shadow">Personalize your guidance for immediate impact.</p>
             </header>
 
             {/* UPGRADED CARD DESIGN */}
-            <div className="bg-white/95 p-6 rounded-3xl shadow-2xl border-t-8 border-teal-500">
+            <div className="bg-white p-6 rounded-3xl shadow-2xl border-t-8 border-teal-500">
               <div className="space-y-4">
                 
                 {/* ROW 1: GENDER & AGE */}
@@ -290,7 +290,7 @@ function AppContent() {
                 <button
                   disabled={isLoading}
                   onClick={handleGenerate}
-                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transform hover:scale-[1.01] transition-all"
+                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] active:scale-[0.98] active:shadow-md focus:outline-none focus:ring-4 focus:ring-teal-400/50"
                 >
                   <Heart className="w-5 h-5 fill-white/20" />
                   {isLoading ? 'Thinking...' : 'Generate Script'}
@@ -300,7 +300,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* RESULT CARD (UPGRADED to Multi-Section Display) */}
+        {/* RESULT CARD (SMARTER DISPLAY) */}
         {(activeTab === 'home' || activeTab === 'coparent') && completion && (
           <div className="max-w-md mx-auto bg-white/95 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4 overflow-hidden border border-gray-200">
             
@@ -335,6 +335,23 @@ function AppContent() {
                             {parsedResponse.whyItWorks.map((tip, index) => (
                                 <li key={index} className="flex items-start text-sm text-slate-700">
                                     <span className="text-teal-600 font-bold mr-2 mt-0.5">•</span>
+                                    {tip}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                
+                {/* TROUBLESHOOTING SECTION (NEW!) */}
+                {parsedResponse.troubleshooting.length > 0 && (
+                    <div className="pt-2 border-t border-gray-100">
+                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Zap className='w-4 h-4 text-red-500'/> TROUBLESHOOTING (What If?)
+                        </p>
+                        <ul className="list-none space-y-2 pl-0">
+                            {parsedResponse.troubleshooting.map((tip, index) => (
+                                <li key={index} className="flex items-start text-sm text-slate-700">
+                                    <span className="text-red-500 font-bold mr-2 mt-0.5">→</span>
                                     {tip}
                                 </li>
                             ))}
