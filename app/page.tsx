@@ -19,13 +19,13 @@ type HistoryItem = {
 
 // --- CONFIGURATION ---
 const FREE_LIMIT = 3;
-// Your existing Stripe Link
 const STRIPE_LINK = "https://buy.stripe.com/test_14A00c1WkbQU8EO2Tv2cg00"; 
 
 function AppContent() {
-  // New State for Categories
+  // --- NEW CATEGORIES ---
   const [gender, setGender] = useState('Boy');
   const [ageGroup, setAgeGroup] = useState('School Age (5-10)');
+  const [struggle, setStruggle] = useState('Big Emotions'); // New State
   
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -59,7 +59,6 @@ function AppContent() {
   const { complete, completion, isLoading } = useCompletion({
     api: '/api/generate-script',
     onFinish: (_prompt, result) => {
-      // Save History
       const newItem: HistoryItem = {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
@@ -83,13 +82,14 @@ function AppContent() {
   const handleGenerate = () => {
     if (!isPro && usageCount >= FREE_LIMIT) return;
     
-    // We combine the new inputs into the message sent to AI
+    // Pass the new 'struggle' variable to the AI
     const promptText = `
       Child: ${gender}, Group: ${ageGroup}.
+      Struggle Category: ${struggle}.
       Situation: ${document.querySelector('textarea')?.value}
     `;
     
-    complete('', { body: { message: promptText, childAge: ageGroup } });
+    complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle } });
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -108,7 +108,7 @@ function AppContent() {
   return (
     <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pb-20 font-sans">
       
-      {/* HEADER MESSAGE - Warm & Therapeutic */}
+      {/* HEADER MESSAGE */}
       <div className="text-center mt-12 mb-6 max-w-lg animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-white/90 text-sm font-medium mb-4 shadow-sm border border-white/10">
           <Sun className="w-4 h-4 text-amber-300" />
@@ -124,7 +124,7 @@ function AppContent() {
 
       <div className="w-full max-w-md bg-stone-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
         
-        {/* PAYWALL ALERT - Softer Design */}
+        {/* PAYWALL ALERT */}
         {!isPro && usageCount >= FREE_LIMIT && (
           <div className="bg-white/90 p-6 rounded-2xl shadow-xl mb-6 text-stone-800 animate-in zoom-in duration-300">
             <div className="flex items-center gap-2 mb-2 font-bold text-lg text-teal-700">
@@ -142,10 +142,10 @@ function AppContent() {
           </div>
         )}
 
-        {/* NEW INPUT FORM */}
-        <div className={`space-y-6 transition-all duration-500 ${!isPro && usageCount >= FREE_LIMIT ? 'opacity-40 pointer-events-none filter blur-[2px]' : ''}`}>
+        {/* INPUT FORM */}
+        <div className={`space-y-5 transition-all duration-500 ${!isPro && usageCount >= FREE_LIMIT ? 'opacity-40 pointer-events-none filter blur-[2px]' : ''}`}>
           
-          {/* 1. GENDER & AGE SELECTION */}
+          {/* ROW 1: GENDER & AGE */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">Gender</label>
@@ -175,12 +175,30 @@ function AppContent() {
             </div>
           </div>
 
-          {/* 2. SITUATION INPUT */}
+          {/* ROW 2: THE STRUGGLE (NEW!) */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">What is happening?</label>
+            <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">What is the struggle?</label>
+            <select 
+              value={struggle}
+              onChange={(e) => setStruggle(e.target.value)}
+              className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-teal-400 outline-none appearance-none font-medium"
+            >
+              <option className="text-black">Big Emotions (Meltdowns/Crying)</option>
+              <option className="text-black">Aggression (Hitting/Biting)</option>
+              <option className="text-black">Resistance (Not listening/Bedtime)</option>
+              <option className="text-black">Siblings (Fighting/Jealousy)</option>
+              <option className="text-black">Screen Time (Turning off/Limits)</option>
+              <option className="text-black">School & Social (Anxiety/Bullying)</option>
+              <option className="text-black">Everyday Routines (Dressing/Eating)</option>
+            </select>
+          </div>
+
+          {/* SITUATION INPUT */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">Details (Optional)</label>
             <textarea
-              placeholder="Ex: He is refusing to turn off the iPad and yelling at me..."
-              className="w-full p-4 bg-white/10 border border-white/10 rounded-xl min-h-[120px] text-white placeholder-white/50 focus:ring-2 focus:ring-teal-400 outline-none text-lg leading-relaxed resize-none"
+              placeholder="Ex: He threw a toy because he lost the game..."
+              className="w-full p-4 bg-white/10 border border-white/10 rounded-xl min-h-[100px] text-white placeholder-white/50 focus:ring-2 focus:ring-teal-400 outline-none text-lg leading-relaxed resize-none"
             />
           </div>
 
@@ -210,7 +228,7 @@ function AppContent() {
         )}
       </div>
 
-      {/* JOURNAL / HISTORY */}
+      {/* HISTORY SECTION */}
       {history.length > 0 && (
         <div className="w-full max-w-md mt-6 pb-10">
           <button 
@@ -245,24 +263,19 @@ function AppContent() {
           )}
         </div>
       )}
+      
+      {/* Background Video */}
+      <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60">
+        <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
+      </video>
+      <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />
+
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-white/80 font-medium">Preparing your space...</div>}>
+      </Suspense>
     </div>
   );
 }
 
 export default function Home() {
-  return (
-    <div className="relative min-h-screen w-full font-sans text-white overflow-y-auto">
-      {/* THERAPEUTIC BACKGROUND: Pexels Video 3120662 */}
-      {/* Note: Using the Pexels Download link as Source */}
-      <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60">
-        <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
-      </video>
-      {/* Warm Overlay filter */}
-      <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />
-
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-white/80 font-medium">Preparing your space...</div>}>
-        <AppContent />
-      </Suspense>
-    </div>
-  );
+  return <AppContent />;
 }
