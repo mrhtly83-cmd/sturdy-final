@@ -29,9 +29,9 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       alert("Logged in with Google!");
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      alert(error.message);
+      alert(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -41,20 +41,20 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       alert("Logged in with Apple!");
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      alert(error.message);
+      alert(error instanceof Error ? error.message : String(error));
     }
   };
 
   // --- EMAIL LOGIN ---
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault(); // Stop the form from refreshing the page
     try {
       await signInWithEmailAndPassword(auth, email, password);
       alert("Logged in with Email!");
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -98,8 +98,8 @@ export default function LoginPage() {
           >
             Sign in with Google
           </button>
-          
-          {/* APPLE BUTTON - TEMPORARILY DISABLED 
+
+          {/* APPLE BUTTON - TEMPORARILY DISABLED
           <button
             onClick={handleAppleLogin}
             className="w-full rounded bg-black p-2 text-white hover:bg-gray-800"
@@ -108,3 +108,7 @@ export default function LoginPage() {
           </button>
           */}
         </div>
+      </div>
+    </div>
+  );
+}

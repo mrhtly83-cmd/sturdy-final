@@ -93,6 +93,9 @@ function AppContent() {
   const [isPro, setIsPro] = useState(false);
   const searchParams = useSearchParams();
 
+  // --- UX STATE ---
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
+
   // Dynamic Placeholder based on struggle selection
   const currentPlaceholder = useMemo(() => {
     return strugglePlaceholders[struggle] || 'What is happening in this moment?';
@@ -108,6 +111,7 @@ function AppContent() {
   }, []);
 
   // --- 2. LOAD DATA ---
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (searchParams.get('unlocked') === 'true') {
       localStorage.setItem('sturdy-is-pro', 'true');
@@ -124,6 +128,7 @@ function AppContent() {
     const savedCount = localStorage.getItem('sturdy-usage');
     if (savedCount) setUsageCount(parseInt(savedCount));
   }, [searchParams]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // --- AI CONNECTION ---
   const { complete, completion, isLoading } = useCompletion({
@@ -154,8 +159,15 @@ function AppContent() {
   });
 
   const handleGenerate = () => {
+    setValidationMessage(null);
+
     if (!isPro && usageCount >= FREE_LIMIT) return;
-    
+
+    if (!situationText.trim() && activeTab === 'home') {
+      setValidationMessage('Describe what is happening so we can tailor the script.');
+      return;
+    }
+
     if (activeTab === 'coparent') {
       complete('', { body: { message: coparentText, mode: 'coparent' } });
     } else {
@@ -245,6 +257,19 @@ function AppContent() {
               <p className="text-white/80 text-sm font-medium drop-shadow">Step {homeStep} of {maxHomeSteps}</p>
             </header>
 
+            {/* Progress Bar */}
+            <div className="w-full bg-white/20 rounded-full h-2 mb-4 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-300"
+                style={{ width: `${(homeStep / maxHomeSteps) * 100}%` }}
+              />
+            </div>
+
+            <p className="text-sm text-white/80 text-center mb-4 font-medium">
+              Move through the steps below to shape your script. Quick presets on Step 2 can auto-fill the details if you want to
+              jump ahead.
+            </p>
+
             {/* UPGRADED CARD DESIGN WITH ANIMATION */}
             <div className="bg-white p-6 rounded-3xl shadow-2xl border-t-8 border-teal-500 min-h-[300px] overflow-hidden">
                 
@@ -282,6 +307,7 @@ function AppContent() {
                     {/* STEP 2: STRUGGLE */}
                     <div className="flex-none w-full space-y-4 pr-6">
                         <h2 className="text-lg font-bold text-gray-800">2. What is the Core Struggle?</h2>
+                        <p className="text-sm text-gray-600">Pick a struggle or tap a quick option below to auto-fill.</p>
                         <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none font-medium text-base">
                             <option>Big Emotions</option>
                             <option>Aggression</option>
@@ -290,6 +316,20 @@ function AppContent() {
                             <option>Screen Time</option>
                             <option>School & Anxiety</option>
                         </select>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          {['Morning Routines', 'Bedtime', 'Leaving House', 'Homework'].map((preset) => (
+                            <button
+                              key={preset}
+                              onClick={() => {
+                                setStruggle(preset === 'Homework' ? 'Resistance/Defiance' : 'Big Emotions');
+                                setSituationText(`Struggle: ${preset}. Describe what your child is doing and how you responded.`);
+                              }}
+                              className="bg-teal-50 border border-teal-200 text-teal-700 rounded-xl py-2 px-3 text-left hover:border-teal-400"
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
                         <button onClick={() => setHomeStep(3)} className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl flex items-center justify-center transition-all hover:bg-teal-700">
                             Continue <ChevronRight className="w-5 h-5 ml-1"/>
                         </button>
@@ -341,6 +381,9 @@ function AppContent() {
                             placeholder={currentPlaceholder}
                             className="w-full p-4 bg-gray-100 border border-gray-300 rounded-xl min-h-[100px] text-gray-800 placeholder-gray-400 outline-none resize-none text-base shadow-inner focus:ring-2 focus:ring-teal-500"
                         />
+                        {validationMessage && (
+                          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{validationMessage}</p>
+                        )}
                         <button
                             disabled={isLoading}
                             onClick={handleGenerate}
@@ -461,7 +504,7 @@ function AppContent() {
                       </span>
                       <span className="text-xs text-white/40">{item.date}</span>
                     </div>
-                    <p className="text-white/60 text-sm italic mb-3">"{item.situation}"</p>
+                    <p className="text-white/60 text-sm italic mb-3">&ldquo;{item.situation}&rdquo;</p>
                     <div className="text-white text-md font-medium border-l-2 border-white/20 pl-3">
                       {item.result}
                     </div>
@@ -487,7 +530,7 @@ function AppContent() {
                 <textarea
                   value={coparentText}
                   onChange={(e) => setCoparentText(e.target.value)}
-                  placeholder="Ex: I can't believe you are late again! You are so irresponsible..."
+                  placeholder="Ex: I can&apos;t believe you are late again! You are so irresponsible..."
                   className="w-full p-4 bg-black/20 border border-white/10 rounded-xl min-h-[120px] text-white placeholder-white/50 outline-none resize-none"
                 />
                 <button
@@ -495,7 +538,7 @@ function AppContent() {
                   onClick={handleGenerate}
                   className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
                 >
-                   <MessageCircle className="w-5 h-5" />
+                  <MessageCircle className="w-5 h-5" />
                   {isLoading ? 'Rewriting...' : 'Neutralize Text'}
                 </button>
               </div>
@@ -512,11 +555,11 @@ function AppContent() {
             <div className="space-y-4">
               <div className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border-l-4 border-amber-400">
                 <h3 className="font-bold text-amber-200 mb-1">Rupture & Repair</h3>
-                <p className="text-sm text-white/80">You don't have to be perfect. If you lose your cool, apologize. The repair builds the bond stronger than before.</p>
+                <p className="text-sm text-white/80">You don&apos;t have to be perfect. If you lose your cool, apologize. The repair builds the bond stronger than before.</p>
               </div>
               <div className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border-l-4 border-teal-400">
                 <h3 className="font-bold text-teal-200 mb-1">Connection Before Correction</h3>
-                <p className="text-sm text-white/80">Before you teach a lesson, connect with the feeling. "I see you are sad" comes before "We don't hit."</p>
+                <p className="text-sm text-white/80">Before you teach a lesson, connect with the feeling. &ldquo;I see you are sad&rdquo; comes before &ldquo;We don&apos;t hit.&rdquo;</p>
               </div>
             </div>
           </div>
@@ -551,7 +594,7 @@ function AppContent() {
           <div className="bg-white rounded-3xl p-8 max-w-sm text-center shadow-2xl animate-in zoom-in">
             <Lock className="w-12 h-12 text-teal-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Unlock Sturdy Parent</h2>
-            <p className="text-slate-600 mb-6">You've hit your free limit. Get unlimited scripts, co-parenting tools, and journal access.</p>
+            <p className="text-slate-600 mb-6">You&apos;ve hit your free limit. Get unlimited scripts, co-parenting tools, and journal access.</p>
             <a href={STRIPE_LINK} className="block w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
               Get Lifetime Access ($9.99)
             </a>
