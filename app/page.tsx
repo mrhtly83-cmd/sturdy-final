@@ -7,7 +7,8 @@ import {
   Heart, Home as HomeIcon, Users, BookOpen, 
   Copy, Check, Lock, 
   MessageCircle, ArrowRight, ArrowLeft,
-  History, Volume2, Lightbulb, Zap, Smile, ChevronRight
+  History, Volume2, Lightbulb, Zap, Smile, ChevronRight,
+  Sparkles, ShieldCheck, Timer
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -32,6 +33,45 @@ const strugglePlaceholders: { [key: string]: string } = {
   'Screen Time': 'Ex: He had a meltdown when I told him to turn off the iPad...',
   'School & Anxiety': 'Ex: She cries every morning when I drop her off at school...',
 };
+
+const heroStats = [
+  { value: '42k+', label: 'Families supported' },
+  { value: '90%', label: 'Report calmer moments' },
+  { value: '3 min', label: 'From chaos to clarity' }
+];
+
+const welcomeHighlights = [
+  {
+    title: 'Science-backed scripts',
+    description: 'Language rooted in nervous system science, attachment, and collaborative problem solving.',
+    icon: Sparkles
+  },
+  {
+    title: 'Personalized in seconds',
+    description: 'Tune every script by age, neurotype, and your preferred tone so it sounds like you.',
+    icon: ShieldCheck
+  },
+  {
+    title: 'Ready when life happens',
+    description: 'Mobile-first experience that fits inside meltdowns, carpool lanes, and bedtime battles.',
+    icon: Timer
+  }
+];
+
+const scenarioCards = [
+  {
+    title: 'Homework standoff',
+    script: '“Ugh, math again?” → “Let’s tackle the first problem together while your brain warms up.”'
+  },
+  {
+    title: 'Siblings at war',
+    script: '“Two brave kids, one lego set. Let’s make a quick plan so both heroes get a turn.”'
+  },
+  {
+    title: 'Screen time meltdown',
+    script: '“I hear how fun it is. Show me one thing you loved and then we’ll power down together.”'
+  }
+];
 
 // Function to parse the multi-part AI response (4 SECTIONS)
 const parseCompletion = (completion: string) => {
@@ -198,33 +238,89 @@ function AppContent() {
   // --- RENDER: 2. WELCOME / LANDING PAGE ---
   if (showWelcome) {
     return (
-      <div className="relative z-10 flex flex-col items-center justify-end min-h-screen pb-16 px-6 font-sans">
-        <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10">
+      <div className="relative z-10 flex min-h-screen flex-col justify-center px-6 pb-10 pt-16 font-sans">
+        <video autoPlay loop muted playsInline className="fixed inset-0 -z-10 h-full w-full object-cover">
           <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
         </video>
-        <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 via-black/20 to-transparent -z-10" />
+        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-black via-black/80 to-teal-900/40" />
 
-        <div className="w-full max-w-md space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700">
-           <div className="flex justify-center mb-4">
-              <div className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/30">
-                <Heart className="w-8 h-8 text-white fill-white" />
+        <div className="mx-auto w-full max-w-5xl space-y-10 text-white animate-in fade-in slide-in-from-bottom-10 duration-700">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
+            <div className="rounded-full bg-white/20 p-2 backdrop-blur">
+              <Heart className="h-4 w-4 text-teal-200" />
+            </div>
+            Calm Starts Here
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-[1.1fr_0.9fr]">
+            <section className="space-y-8">
+              <div className="space-y-4">
+                <h1 className="text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl">
+                  Instant scripts for meltdowns, sibling drama, and “I hate you” moments.
+                </h1>
+                <p className="text-lg text-white/85 md:text-xl">
+                  Sturdy translates tense moments into calm, connected language that keeps everyone’s nervous system regulated.
+                </p>
               </div>
-           </div>
-           
-           <h1 className="text-4xl md:text-5xl font-bold text-white text-center leading-tight drop-shadow-xl">
-             Make it easier to focus on your kids.
-           </h1>
-           
-           <p className="text-lg text-white/90 text-center font-medium">
-             Less conflict. More connection. The words you need, instantly.
-           </p>
 
-           <button 
-             onClick={() => setShowWelcome(false)}
-             className="w-full bg-white text-teal-900 font-bold text-lg py-4 rounded-full shadow-2xl hover:bg-teal-50 hover:scale-105 transition-all flex items-center justify-center gap-2"
-           >
-             Get Started <ArrowRight className="w-5 h-5" />
-           </button>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => setShowWelcome(false)}
+                  className="flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-base font-semibold text-teal-900 shadow-2xl transition hover:-translate-y-0.5 hover:bg-teal-50"
+                >
+                  Get Started <ArrowRight className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('guide');
+                    setShowWelcome(false);
+                  }}
+                  className="rounded-full border border-white/30 px-6 py-3 text-base font-semibold text-white/90 backdrop-blur transition hover:border-white hover:bg-white/10"
+                >
+                  See the manifesto
+                </button>
+              </div>
+
+              <div className="flex flex-wrap gap-6 rounded-3xl bg-white/5 p-6 backdrop-blur">
+                {heroStats.map((stat) => (
+                  <div key={stat.label} className="flex-1 min-w-[140px]">
+                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                    <p className="text-sm text-white/60">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <aside className="space-y-6 rounded-3xl bg-black/40 p-6 backdrop-blur-xl ring-1 ring-white/10">
+              <div className="space-y-4">
+                <p className="text-sm font-semibold uppercase tracking-wider text-white/60">What Sturdy Feels Like</p>
+                <div className="space-y-3">
+                  {welcomeHighlights.map(({ title, description, icon: Icon }) => (
+                    <div key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="mt-1 rounded-full bg-white/10 p-2">
+                        <Icon className="h-4 w-4 text-teal-200" />
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold">{title}</p>
+                        <p className="text-sm text-white/70">{description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-5 shadow-2xl backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Scripts in action</p>
+                <div className="mt-4 space-y-4">
+                  {scenarioCards.map((card) => (
+                    <div key={card.title} className="rounded-xl bg-black/30 p-4 ring-1 ring-white/10">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-teal-200">{card.title}</p>
+                      <p className="mt-2 text-base text-white/85">{card.script}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     );
