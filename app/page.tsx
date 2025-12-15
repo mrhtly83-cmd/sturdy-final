@@ -35,16 +35,23 @@ const strugglePlaceholders: { [key: string]: string } = {
 
 // Function to parse the multi-part AI response (4 SECTIONS)
 const parseCompletion = (completion: string) => {
-    // Note: The split is only temporary for local parsing. The AI is still instructed to use '###'.
+    // 1. Use a robust split based on the '###' separator
     const parts = completion.split('###');
+
     if (parts.length === 4) { 
+        // 2. Trim and process each section
+        const extractBulletedContent = (text: string) => 
+            // Split by '*', filter out empty lines, and trim
+            text.split('*').filter(line => line.trim().length > 0).map(line => line.trim());
+
         return {
             script: parts[0].trim(),
             summary: parts[1].trim(),
-            whyItWorks: parts[2].trim().split('*').filter(line => line.trim().length > 0).map(line => line.trim()),
-            troubleshooting: parts[3].trim().split('*').filter(line => line.trim().length > 0).map(line => line.trim()),
+            whyItWorks: extractBulletedContent(parts[2]),
+            troubleshooting: extractBulletedContent(parts[3]),
         };
     }
+    // Fallback for co-parenting mode or unexpected format
     return { script: completion, summary: null, whyItWorks: [], troubleshooting: [] };
 };
 
@@ -92,23 +99,33 @@ function AppContent() {
   }, [struggle]);
 
 
-  // --- Data Loading and AI Connection (Simplified for brevity, same logic as before) ---
+  // --- 1. HANDLE SPLASH SCREEN TIMER ---
   useEffect(() => {
-    // ... data loading logic ...
-    const timer = setTimeout(() => {setShowSplash(false);}, 2500);
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
     return () => clearTimeout(timer);
   }, []);
-  
+
+  // --- 2. LOAD DATA ---
   useEffect(() => {
-    // ... pro status and history loading ...
-    const savedPro = localStorage.getItem('sturdy-is-pro');
-    if (savedPro === 'true') setIsPro(true);
+    if (searchParams.get('unlocked') === 'true') {
+      localStorage.setItem('sturdy-is-pro', 'true');
+      setIsPro(true);
+      window.history.replaceState(null, '', '/');
+      setShowWelcome(false); 
+      alert("Welcome to the family! Lifetime Access Unlocked. ☀️");
+    } else {
+      const savedPro = localStorage.getItem('sturdy-is-pro');
+      if (savedPro === 'true') setIsPro(true);
+    }
     const savedHistory = localStorage.getItem('sturdy-history');
     if (savedHistory) setHistoryList(JSON.parse(savedHistory));
     const savedCount = localStorage.getItem('sturdy-usage');
     if (savedCount) setUsageCount(parseInt(savedCount));
   }, [searchParams]);
 
+  // --- AI CONNECTION ---
   const { complete, completion, isLoading } = useCompletion({
     api: '/api/generate-script',
     onFinish: (_prompt, result) => {
@@ -162,7 +179,7 @@ function AppContent() {
   
   const parsedResponse = useMemo(() => parseCompletion(completion), [completion]);
 
-  // --- RENDER: 1. SPLASH SCREEN (Unchanged) ---
+  // --- RENDER: 1. SPLASH SCREEN ---
   if (showSplash) {
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
@@ -178,7 +195,7 @@ function AppContent() {
     );
   }
 
-  // --- RENDER: 2. WELCOME / LANDING PAGE (Unchanged) ---
+  // --- RENDER: 2. WELCOME / LANDING PAGE ---
   if (showWelcome) {
     return (
       <div className="relative z-10 flex flex-col items-center justify-end min-h-screen pb-16 px-6 font-sans">
@@ -241,11 +258,11 @@ function AppContent() {
                     </button>
                 )}
 
-                <div className="relative transition-transform duration-500 ease-in-out" 
+                <div className="relative transition-transform duration-500 ease-in-out flex" 
                      style={{ transform: `translateX(-${(homeStep - 1) * 100}%)` }}>
                     
                     {/* STEP 1: KID DETAILS */}
-                    <div className="w-full inline-block align-top space-y-4 pr-6" style={{ width: '100%' }}>
+                    <div className="flex-none w-full space-y-4 pr-6">
                         <h2 className="text-lg font-bold text-gray-800">1. Who is the child?</h2>
                         <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none text-base">
                             <option>Boy</option>
@@ -263,7 +280,7 @@ function AppContent() {
                     </div>
 
                     {/* STEP 2: STRUGGLE */}
-                    <div className="w-full inline-block align-top space-y-4 pr-6" style={{ width: '100%' }}>
+                    <div className="flex-none w-full space-y-4 pr-6">
                         <h2 className="text-lg font-bold text-gray-800">2. What is the Core Struggle?</h2>
                         <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none font-medium text-base">
                             <option>Big Emotions</option>
@@ -279,7 +296,7 @@ function AppContent() {
                     </div>
 
                     {/* STEP 3: PROFILE & TONE */}
-                    <div className="w-full inline-block align-top space-y-4 pr-6" style={{ width: '100%' }}>
+                    <div className="flex-none w-full space-y-4 pr-6">
                         <h2 className="text-lg font-bold text-gray-800">3. Fine-Tune the Advice</h2>
                         
                         <div className="space-y-2">
@@ -302,11 +319,10 @@ function AppContent() {
                                 type="range" 
                                 min="1" 
                                 max="3" 
-                                // FIX: Corrected logic to derive value from state
                                 value={getValueFromTone(tone)}
                                 onChange={(e) => {
                                     const val = parseInt(e.target.value);
-                                    setTone(getToneFromValue(val)); // FIX: Update state using corrected function
+                                    setTone(getToneFromValue(val));
                                 }}
                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-teal-600"
                             />
@@ -317,7 +333,7 @@ function AppContent() {
                     </div>
 
                     {/* STEP 4: SITUATION INPUT & GENERATE */}
-                    <div className="w-full inline-block align-top space-y-4 pr-6" style={{ width: '100%' }}>
+                    <div className="flex-none w-full space-y-4 pr-6">
                         <h2 className="text-lg font-bold text-gray-800">4. Describe the Moment</h2>
                         <textarea
                             value={situationText}
@@ -346,7 +362,7 @@ function AppContent() {
             {/* GRADIENT HEADER & SUMMARY */}
             <div className={`p-4 text-white font-bold flex justify-between items-start ${activeTab === 'coparent' ? 'bg-gradient-to-r from-purple-600 to-indigo-500' : 'bg-gradient-to-r from-teal-600 to-emerald-500'}`}>
               <h3 className="uppercase text-xs tracking-widest flex items-center gap-2">
-                {activeTab === 'coparent' ? 'Neutral Message' : parsedResponse.summary || 'Suggested Script'}
+                {activeTab === 'coparent' ? 'NEUTRAL MESSAGE' : parsedResponse.summary ? parsedResponse.summary.toUpperCase() : 'SUGGESTED SCRIPT'}
               </h3>
               <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-black/20 transition-colors">
                 {copiedId === 'current' ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
@@ -382,7 +398,7 @@ function AppContent() {
                     {/* 1. SCRIPT SECTION */}
                     <div className={`absolute w-full transition-opacity duration-300 ${scriptView === 'script' ? 'opacity-100 relative' : 'opacity-0 absolute top-0 left-0 pointer-events-none'}`}>
                         <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Volume2 className='w-4 h-4 text-teal-600'/> Your Script
+                            <Volume2 className='w-4 h-4 text-teal-600'/> Use These Words
                         </p>
                         <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed border-l-4 border-teal-500/50 pl-3">
                             {parsedResponse.script}
@@ -392,7 +408,7 @@ function AppContent() {
                     {/* 2. WHY IT WORKS SECTION */}
                     <div className={`absolute w-full transition-opacity duration-300 ${scriptView === 'why' ? 'opacity-100 relative' : 'opacity-0 absolute top-0 left-0 pointer-events-none'}`}>
                         <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Lightbulb className='w-4 h-4 text-amber-500 fill-amber-500'/> The Strategy
+                            <Lightbulb className='w-4 h-4 text-amber-500 fill-amber-500'/> The Psychology
                         </p>
                         <ul className="list-none space-y-3 pl-0">
                             {parsedResponse.whyItWorks.map((tip, index) => (
@@ -407,7 +423,7 @@ function AppContent() {
                     {/* 3. TROUBLESHOOTING SECTION */}
                     <div className={`absolute w-full transition-opacity duration-300 ${scriptView === 'troubleshoot' ? 'opacity-100 relative' : 'opacity-0 absolute top-0 left-0 pointer-events-none'}`}>
                         <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Zap className='w-4 h-4 text-red-500'/> Troubleshooting
+                            <Zap className='w-4 h-4 text-red-500'/> What If They Resist?
                         </p>
                         <ul className="list-none space-y-3 pl-0">
                             {parsedResponse.troubleshooting.map((tip, index) => (
@@ -428,7 +444,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* TAB 2: JOURNAL (Unchanged) */}
+        {/* TAB 2: JOURNAL */}
         {activeTab === 'journal' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="mb-6 flex justify-between items-center mt-4">
@@ -456,7 +472,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* TAB 3: CO-PARENT (Unchanged) */}
+        {/* TAB 3: CO-PARENT */}
         {activeTab === 'coparent' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="mb-8 text-center mt-4">
@@ -487,7 +503,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* TAB 4: GUIDE (Unchanged) */}
+        {/* TAB 4: GUIDE */}
         {activeTab === 'guide' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="mb-6 mt-4">
@@ -507,7 +523,7 @@ function AppContent() {
         )}
       </div>
 
-      {/* --- BOTTOM NAVIGATION BAR (Unchanged) --- */}
+      {/* --- BOTTOM NAVIGATION BAR --- */}
       <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-white/10 pb-6 pt-3 px-6 z-40">
         <div className="flex justify-around items-center max-w-md mx-auto">
           <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'home' ? 'text-teal-300' : 'text-white/50'}`}>

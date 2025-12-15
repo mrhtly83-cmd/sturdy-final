@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export const runtime = 'edge';
 
-// --- STRUGGLE-SPECIFIC RULES (Unchanged) ---
+// --- STRUGGLE-SPECIFIC RULES ---
 const STRUGGLE_RULES: { [key: string]: string } = {
   'Big Emotions': 'Rule: Be the calm container. Focus on naming the feeling and staying present, not problem-solving.',
   'Aggression': 'Rule: Be firm on safety, soft on feelings. Stop the behavior immediately, then validate the underlying emotion.',
@@ -19,13 +19,22 @@ const STRUGGLE_RULES: { [key: string]: string } = {
 
 
 export async function POST(req: Request) {
-  const { message, childAge, gender, struggle, profile, tone, mode } = await req.json();
+  // Use destructured variables with default fallbacks to prevent undefined errors
+  const { 
+    message = '', 
+    childAge = 'Unknown', 
+    gender = 'Neutral', 
+    struggle = 'General', 
+    profile = 'Neurotypical', 
+    tone = 'Balanced', 
+    mode = 'script' 
+  } = await req.json();
 
   let SYSTEM_PROMPT = '';
   let USER_MESSAGE = '';
 
   if (mode === 'coparent') {
-    // --- MODE 2: CO-PARENTING TEXT REWRITER (Unchanged) ---
+    // --- MODE 2: CO-PARENTING TEXT REWRITER ---
     SYSTEM_PROMPT = `
       You are 'Sturdy Co-Parent', a conflict-resolution expert.
       Your goal is to rewrite the user's angry/frustrated text message to their co-parent (ex-partner).
@@ -35,22 +44,26 @@ export async function POST(req: Request) {
     USER_MESSAGE = message;
     
   } else {
-    // --- MODE 1: PARENTING SCRIPT (UPGRADED with 4th Section) ---
+    // --- MODE 1: PARENTING SCRIPT (Hardened Logic) ---
     
+    // 1. TONE ADJUSTMENT RULES
     const TONE_ADJUSTMENT = `
       The parent has requested a script with a "${tone}" tone.
       - If "Gentle": Prioritize empathy. Use phrases like "I see," "I wonder," and "Let's explore." Focus on connection.
       - If "Firm": Use directives and clear expectations. Use phrases like "I expect," "The rule is," and "We must." Focus on boundaries.
     `;
 
+    // 2. PROFILE ADJUSTMENT RULES
     const PROFILE_ADJUSTMENT = profile === 'Neurotypical' ? '' : `
       IMPORTANT: The child has a "${profile}" profile.
       - Scripts must be short, direct, and explicit. Avoid abstract language.
       - Always offer sensory or movement alternatives if the struggle is about big emotions.
     `;
     
+    // 3. CORE STRUGGLE LOGIC
     const STRUGGLE_LOGIC = STRUGGLE_RULES[struggle] || 'Rule: Connection before correction.';
     
+    // 4. FINAL SYSTEM PROMPT (4 Sections Required for Front-End)
     SYSTEM_PROMPT = `
       You are 'Sturdy Parent', a therapeutic AI coach providing comprehensive, actionable advice.
 
@@ -66,7 +79,7 @@ export async function POST(req: Request) {
       
       SECTION 1: SCRIPT (The exact words to say, 2-3 sentences, using the requested tone.)
       ###
-      SECTION 2: SUMMARY (A 1-sentence title or summary of the * strategy* used, e.g., "The Connection First Strategy")
+      SECTION 2: SUMMARY (A 1-sentence title or summary of the *strategy* used, e.g., "The Connection First Strategy")
       ###
       SECTION 3: WHY IT WORKS (A bulleted list of 2-3 short, actionable tips explaining the psychology and technique.)
       ###
