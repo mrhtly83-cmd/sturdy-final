@@ -73,6 +73,17 @@ const scenarioCards = [
   }
 ];
 
+const stripSectionLabel = (text: string) => {
+  return text
+    .replace(
+      /^["'\s]*(section\s*\d+\s*:\s*(script|summary|why\s+it\s+works|what\s+if\??|troubleshooting)?)\s*/i,
+      ''
+    )
+    .replace(/^["'\s]+/, '')
+    .replace(/["'\s]+$/, '')
+    .trim();
+};
+
 // Function to parse the multi-part AI response (4 SECTIONS)
 const parseCompletion = (completion: string) => {
     // 1. Use a robust split based on the '###' separator
@@ -84,15 +95,20 @@ const parseCompletion = (completion: string) => {
             // Split by '*', filter out empty lines, and trim
             text.split('*').filter(line => line.trim().length > 0).map(line => line.trim());
 
+        const cleanedScript = stripSectionLabel(parts[0].trim());
+        const cleanedSummary = stripSectionLabel(parts[1].trim());
+        const cleanedWhy = extractBulletedContent(parts[2]).map(stripSectionLabel);
+        const cleanedTroubleshooting = extractBulletedContent(parts[3]).map(stripSectionLabel);
+
         return {
-            script: parts[0].trim(),
-            summary: parts[1].trim(),
-            whyItWorks: extractBulletedContent(parts[2]),
-            troubleshooting: extractBulletedContent(parts[3]),
+            script: cleanedScript,
+            summary: cleanedSummary,
+            whyItWorks: cleanedWhy,
+            troubleshooting: cleanedTroubleshooting,
         };
     }
     // Fallback for co-parenting mode or unexpected format
-    return { script: completion, summary: null, whyItWorks: [], troubleshooting: [] };
+    return { script: stripSectionLabel(completion), summary: null, whyItWorks: [], troubleshooting: [] };
 };
 
 // --- TONE LOGIC (Fixing the slider display) ---
@@ -132,6 +148,7 @@ function AppContent() {
   const [usageCount, setUsageCount] = useState(0);
   const [isPro, setIsPro] = useState(false);
   const searchParams = useSearchParams();
+  const homeProgress = maxHomeSteps > 1 ? ((homeStep - 1) / (maxHomeSteps - 1)) * 100 : 100;
 
   // Dynamic Placeholder based on struggle selection
   const currentPlaceholder = useMemo(() => {
@@ -335,118 +352,198 @@ function AppContent() {
         
         {/* TAB 1: HOME */}
         {activeTab === 'home' && (
-          <div className="max-w-md mx-auto">
-            <header className="mb-4 text-center mt-2">
-              <h1 className="text-4xl font-extrabold text-white drop-shadow-lg tracking-tight">The Script Creator</h1>
-              <p className="text-white/80 text-sm font-medium drop-shadow">Step {homeStep} of {maxHomeSteps}</p>
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+            <header className="rounded-[32px] border border-white/10 bg-white/5 p-6 text-white shadow-2xl backdrop-blur">
+              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Personalized guidance</p>
+              <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <h1 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl">Design the words that calm your home.</h1>
+                <div className="flex gap-4 text-sm text-white/70">
+                  {heroStats.map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-lg font-semibold text-white">{stat.value}</p>
+                      <p>{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </header>
 
-            {/* UPGRADED CARD DESIGN WITH ANIMATION */}
-            <div className="bg-white p-6 rounded-3xl shadow-2xl border-t-8 border-teal-500 min-h-[300px] overflow-hidden">
-                
-                {/* BACK BUTTON */}
-                {homeStep > 1 && (
-                    <button 
-                        onClick={() => setHomeStep(s => Math.max(1, s - 1))}
-                        className="text-gray-500 hover:text-teal-600 transition-colors mb-4 flex items-center text-sm font-semibold"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-1"/> Back
-                    </button>
-                )}
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-white via-white to-teal-50 text-slate-900 shadow-[0_40px_120px_rgba(0,0,0,0.35)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.12),transparent_45%)]" />
+                <div className="relative p-6 sm:p-8">
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-500">
+                      <span>Step {homeStep} of {maxHomeSteps}</span>
+                      <span>{Math.round(homeProgress)}% ready</span>
+                    </div>
+                    <div className="mt-3 h-2 rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-300"
+                        style={{ width: `${homeProgress}%` }}
+                      />
+                    </div>
+                  </div>
 
-                <div className="relative transition-transform duration-500 ease-in-out flex" 
-                     style={{ transform: `translateX(-${(homeStep - 1) * 100}%)` }}>
-                    
+                  {/* BACK BUTTON */}
+                  {homeStep > 1 && (
+                    <button
+                      onClick={() => setHomeStep((s) => Math.max(1, s - 1))}
+                      className="mb-4 inline-flex items-center text-sm font-semibold text-slate-500 transition-colors hover:text-teal-600"
+                    >
+                      <ArrowLeft className="mr-1 h-4 w-4" /> Back
+                    </button>
+                  )}
+
+                  <div
+                    className="relative flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${(homeStep - 1) * 100}%)` }}
+                  >
                     {/* STEP 1: KID DETAILS */}
-                    <div className="flex-none w-full space-y-4 pr-6">
-                        <h2 className="text-lg font-bold text-gray-800">1. Who is the child?</h2>
-                        <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none text-base">
-                            <option>Boy</option>
-                            <option>Girl</option>
-                        </select>
-                        <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none text-base">
-                            <option>Toddler (1-4)</option>
-                            <option>School Age (5-10)</option>
-                            <option>Pre-Teen (11-13)</option>
-                            <option>Teenager (14+)</option>
-                        </select>
-                        <button onClick={() => setHomeStep(2)} className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl flex items-center justify-center transition-all hover:bg-teal-700">
-                            Continue <ChevronRight className="w-5 h-5 ml-1"/>
-                        </button>
+                    <div className="flex w-full flex-none flex-col gap-4">
+                      <h2 className="text-xl font-semibold text-slate-900">1. Who is the child?</h2>
+                      <select
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base font-medium text-slate-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                      >
+                        <option>Boy</option>
+                        <option>Girl</option>
+                      </select>
+                      <select
+                        value={ageGroup}
+                        onChange={(e) => setAgeGroup(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base font-medium text-slate-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                      >
+                        <option>Toddler (1-4)</option>
+                        <option>School Age (5-10)</option>
+                        <option>Pre-Teen (11-13)</option>
+                        <option>Teenager (14+)</option>
+                      </select>
+                      <button
+                        onClick={() => setHomeStep(2)}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400"
+                      >
+                        Continue <ChevronRight className="h-5 w-5" />
+                      </button>
                     </div>
 
                     {/* STEP 2: STRUGGLE */}
-                    <div className="flex-none w-full space-y-4 pr-6">
-                        <h2 className="text-lg font-bold text-gray-800">2. What is the Core Struggle?</h2>
-                        <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-800 outline-none font-medium text-base">
-                            <option>Big Emotions</option>
-                            <option>Aggression</option>
-                            <option>Resistance/Defiance</option>
-                            <option>Siblings</option>
-                            <option>Screen Time</option>
-                            <option>School & Anxiety</option>
-                        </select>
-                        <button onClick={() => setHomeStep(3)} className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl flex items-center justify-center transition-all hover:bg-teal-700">
-                            Continue <ChevronRight className="w-5 h-5 ml-1"/>
-                        </button>
+                    <div className="flex w-full flex-none flex-col gap-4">
+                      <h2 className="text-xl font-semibold text-slate-900">2. What is the core struggle?</h2>
+                      <select
+                        value={struggle}
+                        onChange={(e) => setStruggle(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base font-medium text-slate-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                      >
+                        <option>Big Emotions</option>
+                        <option>Aggression</option>
+                        <option>Resistance/Defiance</option>
+                        <option>Siblings</option>
+                        <option>Screen Time</option>
+                        <option>School & Anxiety</option>
+                      </select>
+                      <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4 text-sm text-teal-700">
+                        Choose the behavior at the root so the script knows where to aim compassion.
+                      </div>
+                      <button
+                        onClick={() => setHomeStep(3)}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400"
+                      >
+                        Continue <ChevronRight className="h-5 w-5" />
+                      </button>
                     </div>
 
                     {/* STEP 3: PROFILE & TONE */}
-                    <div className="flex-none w-full space-y-4 pr-6">
-                        <h2 className="text-lg font-bold text-gray-800">3. Fine-Tune the Advice</h2>
-                        
-                        <div className="space-y-2">
-                           <label className="text-sm font-bold text-gray-600 block">Neurotype (For tailored language)</label>
-                            <select value={profile} onChange={(e) => setProfile(e.target.value)} className="w-full p-3 bg-teal-100 border border-teal-300 rounded-xl text-teal-800 outline-none font-medium text-base shadow-sm">
-                                <option>Neurotypical</option>
-                                <option>ADHD</option>
-                                <option>Autism</option>
-                                <option>Highly Sensitive</option>
-                            </select>
-                        </div>
+                    <div className="flex w-full flex-none flex-col gap-4">
+                      <h2 className="text-xl font-semibold text-slate-900">3. Fine-tune the advice</h2>
 
-                        <div className="space-y-2 pt-1">
-                            <label className="text-sm font-bold text-gray-600 block">Your Desired Tone: {tone}</label>
-                            <div className="flex justify-between items-center text-xs text-gray-500">
-                                <span>Gentle</span>
-                                <span>Firm</span>
-                            </div>
-                            <input 
-                                type="range" 
-                                min="1" 
-                                max="3" 
-                                value={getValueFromTone(tone)}
-                                onChange={(e) => {
-                                    const val = parseInt(e.target.value);
-                                    setTone(getToneFromValue(val));
-                                }}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg accent-teal-600"
-                            />
+                      <div className="space-y-2">
+                        <label className="text-sm font-semibold text-slate-600">Neurotype (for tailored language)</label>
+                        <select
+                          value={profile}
+                          onChange={(e) => setProfile(e.target.value)}
+                          className="w-full rounded-2xl border border-teal-200 bg-teal-50/70 p-4 text-base font-medium text-teal-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                        >
+                          <option>Neurotypical</option>
+                          <option>ADHD</option>
+                          <option>Autism</option>
+                          <option>Highly Sensitive</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2 pt-1">
+                        <label className="text-sm font-semibold text-slate-600">Your desired tone: {tone}</label>
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <span>Gentle</span>
+                          <span>Firm</span>
                         </div>
-                        <button onClick={() => setHomeStep(4)} className="w-full bg-teal-600 text-white font-bold py-3 rounded-xl flex items-center justify-center transition-all hover:bg-teal-700">
-                            Almost Done <ChevronRight className="w-5 h-5 ml-1"/>
-                        </button>
+                        <input
+                          type="range"
+                          min="1"
+                          max="3"
+                          value={getValueFromTone(tone)}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setTone(getToneFromValue(val));
+                          }}
+                          className="range-lg w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-teal-600"
+                        />
+                      </div>
+                      <button
+                        onClick={() => setHomeStep(4)}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400"
+                      >
+                        Almost done <ChevronRight className="h-5 w-5" />
+                      </button>
                     </div>
 
                     {/* STEP 4: SITUATION INPUT & GENERATE */}
-                    <div className="flex-none w-full space-y-4 pr-6">
-                        <h2 className="text-lg font-bold text-gray-800">4. Describe the Moment</h2>
-                        <textarea
-                            value={situationText}
-                            onChange={(e) => setSituationText(e.target.value)}
-                            placeholder={currentPlaceholder}
-                            className="w-full p-4 bg-gray-100 border border-gray-300 rounded-xl min-h-[100px] text-gray-800 placeholder-gray-400 outline-none resize-none text-base shadow-inner focus:ring-2 focus:ring-teal-500"
-                        />
-                        <button
-                            disabled={isLoading}
-                            onClick={handleGenerate}
-                            className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] active:scale-[0.98] active:shadow-md focus:outline-none focus:ring-4 focus:ring-teal-400/50"
-                        >
-                            <Heart className="w-5 h-5 fill-white/20" />
-                            {isLoading ? 'Generating Sturdy Guidance...' : 'Get My Script'}
-                        </button>
+                    <div className="flex w-full flex-none flex-col gap-4">
+                      <h2 className="text-xl font-semibold text-slate-900">4. Describe the moment</h2>
+                      <textarea
+                        value={situationText}
+                        onChange={(e) => setSituationText(e.target.value)}
+                        placeholder={currentPlaceholder}
+                        className="min-h-[120px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base text-slate-800 outline-none placeholder-slate-400 shadow-inner focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                      />
+                      <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 text-sm text-slate-500">
+                        Add sensory detail or the exact words your child used so Sturdy echoes the moment precisely.
+                      </div>
+                      <button
+                        disabled={isLoading}
+                        onClick={handleGenerate}
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        <Heart className="h-5 w-5 fill-white/20" />
+                        {isLoading ? 'Generating Sturdy guidance...' : 'Get my script'}
+                      </button>
                     </div>
+                  </div>
                 </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-[32px] border border-white/10 bg-black/30 p-6 text-white shadow-2xl backdrop-blur">
+                  <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Scripts in action</p>
+                  <div className="mt-4 space-y-4">
+                    {scenarioCards.map((card) => (
+                      <div key={card.title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <p className="text-sm font-semibold uppercase tracking-wide text-teal-200">{card.title}</p>
+                        <p className="mt-2 text-base text-white/85">{card.script}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-[32px] border border-teal-500/30 bg-gradient-to-br from-teal-600/40 to-emerald-500/30 p-6 text-white shadow-2xl backdrop-blur">
+                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/70">Why parents love it</p>
+                  <div className="mt-4 space-y-3 text-base text-white/90">
+                    <p>✨ Micro copy that lands even when emotions peak.</p>
+                    <p>🧠 Strategies rooted in attachment science, not random scripts.</p>
+                    <p>📱 Built for one-handed use in the hallway outside the tantrum.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
