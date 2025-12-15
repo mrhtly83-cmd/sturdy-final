@@ -75,15 +75,21 @@ export async function POST(req: Request) {
 
       CONTEXT: Child is ${gender}, Age: ${childAge}, Struggle: ${struggle}.
       
-      Your response MUST be formatted strictly with the following four sections, separated by triple hashtags (###).
+      Your response MUST be formatted strictly with the following four sections, separated by triple hashtags (###) with a double line break before and after.
       
       SECTION 1: SCRIPT (The exact words to say, 2-3 sentences, using the requested tone.)
+      
       ###
+      
       SECTION 2: SUMMARY (A 1-sentence title or summary of the *strategy* used, e.g., "The Connection First Strategy")
+      
       ###
-      SECTION 3: WHY IT WORKS (A bulleted list of 2-3 short, actionable tips explaining the psychology and technique.)
+      
+      SECTION 3: WHY IT WORKS (A bulleted list of 2-3 short, actionable tips explaining the psychology and technique. Must use * for bullets.)
+      
       ###
-      SECTION 4: TROUBLESHOOTING (A bulleted list of 2 points that proactively answers common "what if" questions for this struggle, e.g., "What if they keep saying NO?")
+      
+      SECTION 4: TROUBLESHOOTING (A bulleted list of 2 points that proactively answers common "what if" questions for this struggle, e.g., "What if they keep saying NO?". Must use * for bullets.)
     `;
 
     USER_MESSAGE = `Situation: ${message}. Generate the full structured response.`;
