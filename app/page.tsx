@@ -3,32 +3,41 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useCompletion } from 'ai/react';
 import { useSearchParams } from 'next/navigation'; 
+// FIX: Renamed History to HistoryIcon to prevent the crash
 import { 
-  Heart, Sparkles, Volume2, 
-  History, ChevronDown, ChevronUp, 
-  Copy, Trash2, Check, Lock, Sun 
+  Heart, Sparkles, Home, Users, BookOpen, 
+  History as HistoryIcon, Copy, Check, Lock, 
+  MessageCircle, ArrowRight, Star
 } from 'lucide-react';
 
+// --- TYPES ---
 type HistoryItem = {
   id: string;
   date: string;
-  age: string;
+  type: 'script' | 'coparent';
   situation: string;
-  script: string;
+  result: string;
 };
 
 // --- CONFIGURATION ---
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 5; 
 const STRIPE_LINK = "https://buy.stripe.com/test_14A00c1WkbQU8EO2Tv2cg00"; 
 
 function AppContent() {
-  // --- NEW CATEGORIES ---
+  // --- APP FLOW STATE ---
+  const [showSplash, setShowSplash] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  // --- NAVIGATION STATE ---
+  const [activeTab, setActiveTab] = useState<'home' | 'journal' | 'coparent' | 'guide'>('home');
+
+  // --- INPUT STATES ---
   const [gender, setGender] = useState('Boy');
   const [ageGroup, setAgeGroup] = useState('School Age (5-10)');
-  const [struggle, setStruggle] = useState('Big Emotions'); // New State
-  
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [struggle, setStruggle] = useState('Big Emotions');
+  const [coparentText, setCoparentText] = useState('');
+
+  const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Monetization State
@@ -36,21 +45,30 @@ function AppContent() {
   const [isPro, setIsPro] = useState(false);
   const searchParams = useSearchParams();
 
-  // --- LOAD DATA ---
+  // --- 1. HANDLE SPLASH SCREEN TIMER ---
+  useEffect(() => {
+    // Show splash for 2.5 seconds, then reveal Welcome Screen
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // --- 2. LOAD DATA ---
   useEffect(() => {
     if (searchParams.get('unlocked') === 'true') {
       localStorage.setItem('sturdy-is-pro', 'true');
       setIsPro(true);
       window.history.replaceState(null, '', '/');
+      // If they just bought it, skip the welcome screen
+      setShowWelcome(false); 
       alert("Welcome to the family! Lifetime Access Unlocked. ☀️");
     } else {
       const savedPro = localStorage.getItem('sturdy-is-pro');
       if (savedPro === 'true') setIsPro(true);
     }
-
     const savedHistory = localStorage.getItem('sturdy-history');
-    if (savedHistory) setHistory(JSON.parse(savedHistory));
-
+    if (savedHistory) setHistoryList(JSON.parse(savedHistory));
     const savedCount = localStorage.getItem('sturdy-usage');
     if (savedCount) setUsageCount(parseInt(savedCount));
   }, [searchParams]);
@@ -59,17 +77,20 @@ function AppContent() {
   const { complete, completion, isLoading } = useCompletion({
     api: '/api/generate-script',
     onFinish: (_prompt, result) => {
+      const type = activeTab === 'coparent' ? 'coparent' : 'script';
+      const situation = activeTab === 'coparent' ? coparentText : document.querySelector('textarea')?.value || 'Unknown';
+
       const newItem: HistoryItem = {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
-        age: ageGroup,
-        situation: document.querySelector('textarea')?.value || 'Unknown',
-        script: result
+        type,
+        situation,
+        result
       };
-      const updatedHistory = [newItem, ...history];
-      setHistory(updatedHistory);
+      
+      const updatedHistory = [newItem, ...historyList];
+      setHistoryList(updatedHistory);
       localStorage.setItem('sturdy-history', JSON.stringify(updatedHistory));
-      setIsHistoryOpen(true);
 
       if (!isPro) {
         const newCount = usageCount + 1;
@@ -82,14 +103,12 @@ function AppContent() {
   const handleGenerate = () => {
     if (!isPro && usageCount >= FREE_LIMIT) return;
     
-    // Pass the new 'struggle' variable to the AI
-    const promptText = `
-      Child: ${gender}, Group: ${ageGroup}.
-      Struggle Category: ${struggle}.
-      Situation: ${document.querySelector('textarea')?.value}
-    `;
-    
-    complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle } });
+    if (activeTab === 'coparent') {
+      complete('', { body: { message: coparentText, mode: 'coparent' } });
+    } else {
+      const promptText = `Child: ${gender}, Group: ${ageGroup}, Struggle: ${struggle}. Situation: ${document.querySelector('textarea')?.value}`;
+      complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle, mode: 'script' } });
+    }
   };
 
   const copyToClipboard = (text: string, id: string) => {
@@ -100,182 +119,270 @@ function AppContent() {
 
   const clearHistory = () => {
     if (confirm('Clear your journal?')) {
-      setHistory([]);
+      setHistoryList([]);
       localStorage.removeItem('sturdy-history');
     }
   };
 
-  return (
-    <div className="relative z-10 flex flex-col items-center justify-start min-h-screen p-4 pb-20 font-sans">
-      
-      {/* HEADER MESSAGE */}
-      <div className="text-center mt-12 mb-6 max-w-lg animate-in fade-in slide-in-from-top-4 duration-1000">
-        <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full text-white/90 text-sm font-medium mb-4 shadow-sm border border-white/10">
-          <Sun className="w-4 h-4 text-amber-300" />
-          <span>Calm Guidance in Seconds</span>
+  // --- RENDER: 1. SPLASH SCREEN ---
+  if (showSplash) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
+        <div className="relative animate-pulse">
+          {/* Creating the 'Asterisk' logo effect from video */}
+          <Star className="w-24 h-24 text-teal-500 fill-teal-500 animate-spin-slow duration-[3000ms]" />
+          <Sparkles className="w-12 h-12 text-teal-300 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight shadow-black/10 drop-shadow-lg">
-          Connect, Don't Conflict.
+        <h1 className="text-teal-900 text-xl font-bold mt-6 tracking-widest animate-in fade-in duration-1000 slide-in-from-bottom-4">
+          STURDY PARENT
         </h1>
-        <p className="text-lg text-white/90 leading-relaxed drop-shadow-md">
-          Find the right words to navigate big feelings and build a stronger bond with your child.
-        </p>
       </div>
+    );
+  }
 
-      <div className="w-full max-w-md bg-stone-900/40 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
+  // --- RENDER: 2. WELCOME / LANDING PAGE ---
+  if (showWelcome) {
+    return (
+      <div className="relative z-10 flex flex-col items-center justify-end min-h-screen pb-16 px-6 font-sans">
+        {/* Background Video */}
+        <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10">
+          <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
+        </video>
+        <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-t from-black/80 via-black/20 to-transparent -z-10" />
+
+        <div className="w-full max-w-md space-y-6 animate-in slide-in-from-bottom-10 fade-in duration-700">
+           <div className="flex justify-center mb-4">
+              <div className="bg-white/20 backdrop-blur-md p-3 rounded-full border border-white/30">
+                <Heart className="w-8 h-8 text-white fill-white" />
+              </div>
+           </div>
+           
+           <h1 className="text-4xl md:text-5xl font-bold text-white text-center leading-tight drop-shadow-xl">
+             Make it easier to focus on your kids.
+           </h1>
+           
+           <p className="text-lg text-white/90 text-center font-medium">
+             Less conflict. More connection. The words you need, instantly.
+           </p>
+
+           <button 
+             onClick={() => setShowWelcome(false)}
+             className="w-full bg-white text-teal-900 font-bold text-lg py-4 rounded-full shadow-2xl hover:bg-teal-50 hover:scale-105 transition-all flex items-center justify-center gap-2"
+           >
+             Get Started <ArrowRight className="w-5 h-5" />
+           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- RENDER: 3. THE MAIN APP ---
+  return (
+    <div className="relative z-10 flex flex-col min-h-screen font-sans pb-24 animate-in fade-in duration-500">
+      
+      {/* CONTENT AREA */}
+      <div className="flex-1 p-6 overflow-y-auto">
         
-        {/* PAYWALL ALERT */}
-        {!isPro && usageCount >= FREE_LIMIT && (
-          <div className="bg-white/90 p-6 rounded-2xl shadow-xl mb-6 text-stone-800 animate-in zoom-in duration-300">
-            <div className="flex items-center gap-2 mb-2 font-bold text-lg text-teal-700">
-              <Lock className="w-5 h-5" /> Daily Limit Reached
+        {/* TAB 1: HOME */}
+        {activeTab === 'home' && (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <header className="mb-8 text-center mt-4">
+              <h1 className="text-3xl font-bold text-white drop-shadow-md">Find the Words</h1>
+              <p className="text-white/80 text-sm">Select a struggle, get a script.</p>
+            </header>
+
+            <div className="bg-stone-900/40 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none text-sm">
+                    <option className="text-black">Boy</option>
+                    <option className="text-black">Girl</option>
+                  </select>
+                  <select value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none text-sm">
+                    <option className="text-black">Toddler (1-4)</option>
+                    <option className="text-black">School Age (5-10)</option>
+                    <option className="text-black">Pre-Teen (11-13)</option>
+                    <option className="text-black">Teenager (14+)</option>
+                  </select>
+                </div>
+                
+                <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none font-medium">
+                  <option className="text-black">Big Emotions</option>
+                  <option className="text-black">Aggression</option>
+                  <option className="text-black">Resistance/Defiance</option>
+                  <option className="text-black">Siblings</option>
+                  <option className="text-black">Screen Time</option>
+                  <option className="text-black">School & Anxiety</option>
+                </select>
+
+                <textarea
+                  placeholder="What happened? (e.g. He won't put on shoes)"
+                  className="w-full p-4 bg-white/10 border border-white/10 rounded-xl min-h-[100px] text-white placeholder-white/50 outline-none resize-none"
+                />
+
+                <button
+                  disabled={isLoading}
+                  onClick={handleGenerate}
+                  className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Sparkles className="animate-spin w-5 h-5" /> : <Heart className="w-5 h-5 fill-white/20" />}
+                  {isLoading ? 'Thinking...' : 'Generate Script'}
+                </button>
+              </div>
             </div>
-            <p className="mb-4 text-sm font-medium leading-relaxed opacity-80">
-              Join our community of mindful parents. Unlock unlimited scripts and lifetime access for just $9.99.
-            </p>
-            <a 
-              href={STRIPE_LINK} 
-              className="block w-full bg-teal-700 text-white text-center font-bold py-3 rounded-xl hover:bg-teal-800 transition-all shadow-lg hover:shadow-teal-700/20"
-            >
-              Unlock Lifetime Access ($9.99)
-            </a>
           </div>
         )}
 
-        {/* INPUT FORM */}
-        <div className={`space-y-5 transition-all duration-500 ${!isPro && usageCount >= FREE_LIMIT ? 'opacity-40 pointer-events-none filter blur-[2px]' : ''}`}>
-          
-          {/* ROW 1: GENDER & AGE */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">Gender</label>
-              <select 
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-teal-400 outline-none appearance-none"
-              >
-                <option className="text-black">Boy</option>
-                <option className="text-black">Girl</option>
-                <option className="text-black">Neutral</option>
-              </select>
+        {/* TAB 2: JOURNAL */}
+        {activeTab === 'journal' && (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
+            <header className="mb-6 flex justify-between items-center mt-4">
+              <h1 className="text-2xl font-bold text-white">Your Journal</h1>
+              <button onClick={clearHistory} className="text-xs text-red-200 bg-red-900/30 px-3 py-1 rounded-full">Clear</button>
+            </header>
+
+            <div className="space-y-4">
+              {historyList.length === 0 ? (
+                <div className="text-center text-white/50 py-10">No entries yet. Go generate some wisdom!</div>
+              ) : (
+                historyList.map((item) => (
+                  <div key={item.id} className="bg-stone-900/40 backdrop-blur-md border border-white/10 p-5 rounded-2xl">
+                    <div className="flex justify-between mb-2">
+                      <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${item.type === 'coparent' ? 'bg-purple-500/30 text-purple-200' : 'bg-teal-500/30 text-teal-200'}`}>
+                        {item.type === 'coparent' ? 'Co-Parenting' : 'Script'}
+                      </span>
+                      <span className="text-xs text-white/40">{item.date}</span>
+                    </div>
+                    <p className="text-white/60 text-sm italic mb-3">"{item.situation}"</p>
+                    <div className="text-white text-md font-medium border-l-2 border-white/20 pl-3">
+                      {item.result}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
+          </div>
+        )}
+
+        {/* TAB 3: CO-PARENT */}
+        {activeTab === 'coparent' && (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
+            <header className="mb-8 text-center mt-4">
+              <h1 className="text-3xl font-bold text-white drop-shadow-md">Peaceful Comms</h1>
+              <p className="text-white/80 text-sm">Rewrite angry texts into neutral ones.</p>
+            </header>
+
+            <div className="bg-purple-900/30 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl">
+              <div className="space-y-4">
+                <div className="bg-white/10 p-3 rounded-lg text-xs text-purple-200 flex gap-2">
+                  <Check className="w-4 h-4" /> Removes blame and sarcasm.
+                </div>
+                <textarea
+                  value={coparentText}
+                  onChange={(e) => setCoparentText(e.target.value)}
+                  placeholder="Ex: I can't believe you are late again! You are so irresponsible..."
+                  className="w-full p-4 bg-black/20 border border-white/10 rounded-xl min-h-[120px] text-white placeholder-white/50 outline-none resize-none"
+                />
+                <button
+                  disabled={isLoading}
+                  onClick={handleGenerate}
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Sparkles className="animate-spin w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
+                  {isLoading ? 'Rewriting...' : 'Neutralize Text'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: GUIDE */}
+        {activeTab === 'guide' && (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
+            <header className="mb-6 mt-4">
+              <h1 className="text-2xl font-bold text-white">The Manifesto</h1>
+            </header>
             
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">Age Group</label>
-              <select 
-                value={ageGroup}
-                onChange={(e) => setAgeGroup(e.target.value)}
-                className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-teal-400 outline-none appearance-none"
-              >
-                <option className="text-black">Toddler (1-4)</option>
-                <option className="text-black">School Age (5-10)</option>
-                <option className="text-black">Pre-Teen (11-13)</option>
-                <option className="text-black">Teenager (14+)</option>
-              </select>
+            <div className="space-y-4">
+              <div className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border-l-4 border-amber-400">
+                <h3 className="font-bold text-amber-200 mb-1">Rupture & Repair</h3>
+                <p className="text-sm text-white/80">You don't have to be perfect. If you lose your cool, apologize. The repair builds the bond stronger than before.</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border-l-4 border-teal-400">
+                <h3 className="font-bold text-teal-200 mb-1">Connection Before Correction</h3>
+                <p className="text-sm text-white/80">Before you teach a lesson, connect with the feeling. "I see you are sad" comes before "We don't hit."</p>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* ROW 2: THE STRUGGLE (NEW!) */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">What is the struggle?</label>
-            <select 
-              value={struggle}
-              onChange={(e) => setStruggle(e.target.value)}
-              className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-teal-400 outline-none appearance-none font-medium"
-            >
-              <option className="text-black">Big Emotions (Meltdowns/Crying)</option>
-              <option className="text-black">Aggression (Hitting/Biting)</option>
-              <option className="text-black">Resistance (Not listening/Bedtime)</option>
-              <option className="text-black">Siblings (Fighting/Jealousy)</option>
-              <option className="text-black">Screen Time (Turning off/Limits)</option>
-              <option className="text-black">School & Social (Anxiety/Bullying)</option>
-              <option className="text-black">Everyday Routines (Dressing/Eating)</option>
-            </select>
-          </div>
-
-          {/* SITUATION INPUT */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1">Details (Optional)</label>
-            <textarea
-              placeholder="Ex: He threw a toy because he lost the game..."
-              className="w-full p-4 bg-white/10 border border-white/10 rounded-xl min-h-[100px] text-white placeholder-white/50 focus:ring-2 focus:ring-teal-400 outline-none text-lg leading-relaxed resize-none"
-            />
-          </div>
-
-          <button
-            disabled={isLoading}
-            onClick={handleGenerate}
-            className="w-full bg-gradient-to-r from-teal-600 to-emerald-500 hover:from-teal-500 hover:to-emerald-400 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-teal-500/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5"
-          >
-            {isLoading ? <Sparkles className="animate-spin w-5 h-5" /> : <Heart className="w-5 h-5 fill-white/20" />}
-            {isLoading ? 'Consulting Sturdy AI...' : 'Find the Words'}
-          </button>
-        </div>
-
-        {/* RESULTS CARD */}
-        {completion && (
-          <div className="bg-white/95 text-slate-700 p-6 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4 border-l-4 border-teal-500">
+        {/* RESULT CARD */}
+        {(activeTab === 'home' || activeTab === 'coparent') && completion && (
+          <div className="max-w-md mx-auto bg-white/95 text-slate-800 p-6 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4">
             <div className="flex justify-between items-start mb-3">
-              <h3 className="text-teal-700 font-bold flex items-center gap-2 uppercase text-xs tracking-widest">
-                <Volume2 className="w-4 h-4" /> Gentle Script
+              <h3 className="text-slate-500 font-bold uppercase text-xs tracking-widest">
+                {activeTab === 'coparent' ? '✨ Neutral Version' : '✨ Suggested Script'}
               </h3>
-              <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-slate-200 transition-colors">
+              <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-slate-200">
                 {copiedId === 'current' ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-lg leading-relaxed font-medium whitespace-pre-wrap">{completion}</p>
+            <p className="text-lg font-medium whitespace-pre-wrap">{completion}</p>
           </div>
         )}
       </div>
 
-      {/* HISTORY SECTION */}
-      {history.length > 0 && (
-        <div className="w-full max-w-md mt-6 pb-10">
-          <button 
-            onClick={() => setIsHistoryOpen(!isHistoryOpen)}
-            className="w-full flex items-center justify-between p-4 bg-stone-900/40 backdrop-blur-md border border-white/10 rounded-xl text-white/90 hover:bg-stone-900/50 transition-all"
-          >
-            <div className="flex items-center gap-2 font-semibold">
-              <History className="w-4 h-4 text-teal-200" />
-              <span>Your Journal ({history.length})</span>
-            </div>
-            {isHistoryOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+      {/* --- BOTTOM NAVIGATION BAR --- */}
+      <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-white/10 pb-6 pt-3 px-6 z-40">
+        <div className="flex justify-around items-center max-w-md mx-auto">
+          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'home' ? 'text-teal-300' : 'text-white/50'}`}>
+            <Home className="w-6 h-6" />
+            <span className="text-[10px] font-bold">Create</span>
           </button>
+          <button onClick={() => setActiveTab('journal')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'}`}>
+            <HistoryIcon className="w-6 h-6" />
+            <span className="text-[10px] font-bold">Journal</span>
+          </button>
+          <button onClick={() => setActiveTab('coparent')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'coparent' ? 'text-purple-300' : 'text-white/50'}`}>
+            <Users className="w-6 h-6" />
+            <span className="text-[10px] font-bold">Co-Parent</span>
+          </button>
+          <button onClick={() => setActiveTab('guide')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'guide' ? 'text-amber-300' : 'text-white/50'}`}>
+            <BookOpen className="w-6 h-6" />
+            <span className="text-[10px] font-bold">Guide</span>
+          </button>
+        </div>
+      </div>
 
-          {isHistoryOpen && (
-            <div className="mt-2 space-y-3 animate-in fade-in slide-in-from-top-2">
-              <div className="flex justify-end">
-                  <button onClick={clearHistory} className="text-xs text-red-200/80 hover:text-red-200 flex items-center gap-1 opacity-60 hover:opacity-100 px-2 py-1 transition-opacity">
-                    <Trash2 className="w-3 h-3" /> Clear Journal
-                  </button>
-              </div>
-              {history.map((item) => (
-                <div key={item.id} className="bg-stone-900/30 backdrop-blur-sm border border-white/5 p-5 rounded-2xl hover:bg-stone-900/40 transition-colors">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-xs font-bold text-teal-200 bg-teal-900/30 px-2 py-1 rounded-md">{item.age}</span>
-                    <span className="text-xs text-white/40">{item.date}</span>
-                  </div>
-                  <p className="text-white/70 text-sm italic mb-3">"{item.situation}"</p>
-                  <p className="text-white text-md font-medium border-l-2 border-teal-500/50 pl-3">{item.script}</p>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* PAYWALL ALERT (Global) */}
+      {!isPro && usageCount >= FREE_LIMIT && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl p-8 max-w-sm text-center shadow-2xl animate-in zoom-in">
+            <Lock className="w-12 h-12 text-teal-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Unlock Sturdy Parent</h2>
+            <p className="text-slate-600 mb-6">You've hit your free limit. Get unlimited scripts, co-parenting tools, and journal access.</p>
+            <a href={STRIPE_LINK} className="block w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
+              Get Lifetime Access ($9.99)
+            </a>
+          </div>
         </div>
       )}
-      
-      {/* Background Video */}
-      <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-60">
+
+      {/* BACKGROUNDS */}
+      <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-40">
         <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
       </video>
       <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />
-
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-white/80 font-medium">Preparing your space...</div>}>
-      </Suspense>
     </div>
   );
 }
 
 export default function Home() {
-  return <AppContent />;
+  return (
+    <div className="relative min-h-screen w-full font-sans text-white bg-black">
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+        <AppContent />
+      </Suspense>
+    </div>
+  );
 }
