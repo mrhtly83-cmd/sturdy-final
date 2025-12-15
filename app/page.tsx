@@ -35,6 +35,11 @@ function AppContent() {
   const [gender, setGender] = useState('Boy');
   const [ageGroup, setAgeGroup] = useState('School Age (5-10)');
   const [struggle, setStruggle] = useState('Big Emotions');
+  // NEW: Neurodiverse Profile State
+  const [profile, setProfile] = useState('Neurotypical'); 
+  // NEW: Tone State
+  const [tone, setTone] = useState('Balanced'); 
+  
   const [coparentText, setCoparentText] = useState('');
 
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
@@ -104,8 +109,9 @@ function AppContent() {
     if (activeTab === 'coparent') {
       complete('', { body: { message: coparentText, mode: 'coparent' } });
     } else {
-      const promptText = `Child: ${gender}, Group: ${ageGroup}, Struggle: ${struggle}. Situation: ${document.querySelector('textarea')?.value}`;
-      complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle, mode: 'script' } });
+      // PASS NEW VARIABLES TO API
+      const promptText = `Child: ${gender}, Group: ${ageGroup}, Struggle: ${struggle}. Profile: ${profile}. Tone: ${tone}. Situation: ${document.querySelector('textarea')?.value}`;
+      complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle, profile, tone, mode: 'script' } });
     }
   };
 
@@ -127,7 +133,6 @@ function AppContent() {
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
         <div className="relative animate-pulse">
-          {/* Custom SVG Star */}
           <svg className="w-24 h-24 text-teal-500 animate-spin-slow duration-[3000ms]" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
           </svg>
@@ -143,7 +148,6 @@ function AppContent() {
   if (showWelcome) {
     return (
       <div className="relative z-10 flex flex-col items-center justify-end min-h-screen pb-16 px-6 font-sans">
-        {/* Background Video */}
         <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10">
           <source src="https://www.pexels.com/download/video/3120662/" type="video/mp4" />
         </video>
@@ -192,6 +196,8 @@ function AppContent() {
 
             <div className="bg-stone-900/40 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl">
               <div className="space-y-4">
+                
+                {/* ROW 1: GENDER & AGE */}
                 <div className="grid grid-cols-2 gap-3">
                   <select value={gender} onChange={(e) => setGender(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none text-sm">
                     <option className="text-black">Boy</option>
@@ -205,14 +211,46 @@ function AppContent() {
                   </select>
                 </div>
                 
-                <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none font-medium">
-                  <option className="text-black">Big Emotions</option>
-                  <option className="text-black">Aggression</option>
-                  <option className="text-black">Resistance/Defiance</option>
-                  <option className="text-black">Siblings</option>
-                  <option className="text-black">Screen Time</option>
-                  <option className="text-black">School & Anxiety</option>
-                </select>
+                {/* ROW 2: STRUGGLE & PROFILE (New Feature) */}
+                <div className="grid grid-cols-2 gap-3">
+                   {/* Struggle Dropdown */}
+                   <select value={struggle} onChange={(e) => setStruggle(e.target.value)} className="w-full p-3 bg-white/10 border border-white/10 rounded-xl text-white outline-none font-medium text-sm">
+                      <option className="text-black">Big Emotions</option>
+                      <option className="text-black">Aggression</option>
+                      <option className="text-black">Resistance/Defiance</option>
+                      <option className="text-black">Siblings</option>
+                      <option className="text-black">Screen Time</option>
+                      <option className="text-black">School & Anxiety</option>
+                    </select>
+                   {/* Neurodiverse Profile Dropdown (Premium Value) */}
+                    <select value={profile} onChange={(e) => setProfile(e.target.value)} className="w-full p-3 bg-teal-800/50 border border-teal-700/50 rounded-xl text-white outline-none font-medium text-sm">
+                        <option className="text-black">Neurotypical</option>
+                        <option className="text-black">ADHD</option>
+                        <option className="text-black">Autism</option>
+                        <option className="text-black">Highly Sensitive</option>
+                    </select>
+                </div>
+                
+                {/* ROW 3: TONE SLIDER (New Feature) */}
+                <div className="space-y-2 pt-1">
+                    <label className="text-xs font-bold text-teal-100 uppercase tracking-widest ml-1 block">Desired Tone: {tone}</label>
+                    <div className="flex justify-between items-center text-xs text-white/70">
+                        <span>Gentle</span>
+                        <span>Firm</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="1" 
+                        max="3" 
+                        value={tone === 'Gentle' ? 1 : tone === 'Firm' ? 3 : 2}
+                        onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setTone(val === 1 ? 'Gentle' : val === 3 ? 'Firm' : 'Balanced');
+                        }}
+                        className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer range-lg accent-teal-500"
+                    />
+                </div>
+
 
                 <textarea
                   placeholder="What happened? (e.g. He won't put on shoes)"
@@ -232,7 +270,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* TAB 2: JOURNAL */}
+        {/* TAB 2: JOURNAL (Unchanged) */}
         {activeTab === 'journal' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="mb-6 flex justify-between items-center mt-4">
@@ -263,7 +301,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* TAB 3: CO-PARENT */}
+        {/* TAB 3: CO-PARENT (Unchanged) */}
         {activeTab === 'coparent' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="mb-8 text-center mt-4">
@@ -295,7 +333,7 @@ function AppContent() {
           </div>
         )}
 
-        {/* TAB 4: GUIDE */}
+        {/* TAB 4: GUIDE (Unchanged) */}
         {activeTab === 'guide' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
             <header className="mb-6 mt-4">

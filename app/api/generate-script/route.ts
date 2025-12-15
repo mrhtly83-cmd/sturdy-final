@@ -8,56 +8,59 @@ const openai = new OpenAI({
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
-  // We now receive 'struggle' from the front end
-  const { message, childAge, gender, struggle } = await req.json();
+  // We now receive 'profile' and 'tone' from the front end
+  const { message, childAge, gender, struggle, profile, tone, mode } = await req.json();
 
-  const STURDY_MANIFESTO = `
-    You are 'Sturdy Parent', a wise, therapeutic AI coach based on attachment theory.
-    
-    CORE PHILOSOPHY (Philippa Perry & Others):
-    - Relationship First: Connection before correction.
-    - No Labels: Never call a child "naughty" or "bad".
-    - Validate: Always validate the feeling before fixing the behavior.
-    
-    CONTEXTUAL RULES FOR CATEGORY: "${struggle || 'General'}"
-    
-    1. IF "Big Emotions":
-       - Goal: Containment. Be the calm container for their chaos.
-       - Script: "You are so mad. I am right here. I am not leaving."
-       
-    2. IF "Aggression" (Hitting/Biting):
-       - Goal: Safety + Validation. 
-       - Rule: Stop the hand, validate the impulse. 
-       - Script: "I can't let you hit. I know you are angry, but hitting hurts."
-       
-    3. IF "Siblings":
-       - Goal: Mediation, not Judge.
-       - Rule: Do not take sides or decide who started it. 
-       - Script: "You two are having a hard time. Let's take a break."
-       
-    4. IF "Screen Time":
-       - Goal: Bridge the gap.
-       - Rule: Join them in their world for 1 minute before turning it off.
-       - Script: "Wow, that game looks fun. It's hard to stop when it's fun."
-       
-    YOUR TASK:
-    Provide a specific, 2-3 sentence script for the parent to say.
-    Then, provide a 1-sentence "Why it works" explanation.
-    Tone: Warm, firm, calm.
-  `;
+  let SYSTEM_PROMPT = '';
+
+  if (mode === 'coparent') {
+    // --- MODE 2: CO-PARENTING TEXT REWRITER (Unchanged) ---
+    SYSTEM_PROMPT = `
+      You are 'Sturdy Co-Parent', a conflict-resolution expert.
+      Your goal is to rewrite the user's angry/frustrated text message to their co-parent (ex-partner).
+      
+      RULES:
+      1. Remove all emotion, sarcasm, and blame.
+      2. Keep it "BIFF": Brief, Informative, Friendly, Firm.
+      3. Output ONLY the rewritten text message. No intro, no explanations.
+    `;
+  } else {
+    // --- MODE 1: PARENTING SCRIPT (UPGRADED) ---
+    const TONE_ADJUSTMENT = `
+      The parent has requested a script with a "${tone}" tone.
+      - If "Gentle": Prioritize empathy and soft language. Focus less on immediate consequence.
+      - If "Firm": Use clear, concise language and strong boundaries, but maintain kindness (no yelling).
+      - If "Balanced": Combine validation with clear expectations.
+    `;
+
+    const PROFILE_ADJUSTMENT = profile === 'Neurotypical' ? '' : `
+      IMPORTANT: The child has a "${profile}" profile.
+      - Must use short, direct, and explicit language. Avoid idioms and sarcasm.
+      - Focus on one step at a time. Do not overwhelm with options.
+      - Use visual cues or body language suggestions if possible.
+    `;
+
+    SYSTEM_PROMPT = `
+      You are 'Sturdy Parent', a wise, therapeutic AI coach.
+      
+      CORE PHILOSOPHY: Connection before correction. Always validate the feeling before fixing the behavior.
+      
+      ${PROFILE_ADJUSTMENT}
+      ${TONE_ADJUSTMENT}
+
+      CONTEXT: Child is ${gender}, Age: ${childAge}, Struggle: ${struggle}.
+      
+      TASK: Provide a specific, 2-3 sentence script for the parent to say.
+      Then, provide a 1-sentence "Why it works" explanation.
+    `;
+  }
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini', 
     stream: true,
     messages: [
-      {
-        role: 'system',
-        content: STURDY_MANIFESTO + `\n\nChild: ${gender}, Age: ${childAge}, Struggle: ${struggle}.`
-      },
-      {
-        role: 'user',
-        content: `Situation details: ${message}. \n\nGive me the script.`
-      },
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: message },
     ],
   });
 
