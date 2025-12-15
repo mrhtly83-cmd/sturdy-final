@@ -7,7 +7,7 @@ import {
   Heart, Home as HomeIcon, Users, BookOpen, 
   Copy, Check, Lock, 
   MessageCircle, ArrowRight,
-  History 
+  History, Volume2, Lightbulb 
 } from 'lucide-react';
 
 // --- TYPES ---
@@ -31,6 +31,20 @@ const strugglePlaceholders: { [key: string]: string } = {
   'Siblings': 'Ex: The kids are fighting over who gets the blue cup...',
   'Screen Time': 'Ex: He had a meltdown when I told him to turn off the iPad...',
   'School & Anxiety': 'Ex: She cries every morning when I drop her off at school...',
+};
+
+// Function to parse the multi-part AI response
+const parseCompletion = (completion: string) => {
+    const parts = completion.split('###');
+    if (parts.length === 3) {
+        return {
+            script: parts[0].trim(),
+            summary: parts[1].trim(),
+            whyItWorks: parts[2].trim().split('*').filter(line => line.trim().length > 0).map(line => line.trim()),
+        };
+    }
+    // Fallback for co-parenting mode or unexpected format
+    return { script: completion, summary: null, whyItWorks: [] };
 };
 
 function AppContent() {
@@ -139,6 +153,9 @@ function AppContent() {
       localStorage.removeItem('sturdy-history');
     }
   };
+  
+  // Parse the full completion whenever it updates
+  const parsedResponse = useMemo(() => parseCompletion(completion), [completion]);
 
   // --- RENDER: 1. SPLASH SCREEN ---
   if (showSplash) {
@@ -283,22 +300,47 @@ function AppContent() {
           </div>
         )}
 
-        {/* RESULT CARD (UPGRADED DESIGN) */}
+        {/* RESULT CARD (UPGRADED to Multi-Section Display) */}
         {(activeTab === 'home' || activeTab === 'coparent') && completion && (
           <div className="max-w-md mx-auto bg-white/95 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4 overflow-hidden border border-gray-200">
+            
             {/* GRADIENT HEADER */}
-            <div className={`p-4 text-white font-bold flex justify-between items-center ${activeTab === 'coparent' ? 'bg-gradient-to-r from-purple-600 to-indigo-500' : 'bg-gradient-to-r from-teal-600 to-emerald-500'}`}>
+            <div className={`p-4 text-white font-bold flex justify-between items-start ${activeTab === 'coparent' ? 'bg-gradient-to-r from-purple-600 to-indigo-500' : 'bg-gradient-to-r from-teal-600 to-emerald-500'}`}>
               <h3 className="uppercase text-xs tracking-widest flex items-center gap-2">
                 {activeTab === 'coparent' ? <MessageCircle className="w-4 h-4" /> : <Heart className="w-4 h-4" />}
-                {activeTab === 'coparent' ? 'Neutral Message' : 'Suggested Script'}
+                {activeTab === 'coparent' ? 'Neutral Message' : parsedResponse.summary || 'Suggested Script'}
               </h3>
               <button onClick={() => copyToClipboard(completion, 'current')} className="p-1.5 rounded-full hover:bg-black/20 transition-colors">
                 {copiedId === 'current' ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
-            {/* CONTENT */}
-            <div className="p-4 text-slate-800">
-                <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed">{completion}</p>
+            
+            <div className="p-4 text-slate-800 space-y-4">
+                
+                {/* SCRIPT SECTION */}
+                <div className="border-l-4 border-teal-500/50 pl-3">
+                    <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-1 flex items-center gap-2">
+                        <Volume2 className='w-4 h-4 text-teal-600'/> EXACT WORDS TO SAY
+                    </p>
+                    <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed">{parsedResponse.script}</p>
+                </div>
+
+                {/* WHY IT WORKS SECTION */}
+                {parsedResponse.whyItWorks.length > 0 && (
+                    <div className="pt-2 border-t border-gray-100">
+                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Lightbulb className='w-4 h-4 text-amber-500 fill-amber-500'/> WHY IT WORKS
+                        </p>
+                        <ul className="list-none space-y-2 pl-0">
+                            {parsedResponse.whyItWorks.map((tip, index) => (
+                                <li key={index} className="flex items-start text-sm text-slate-700">
+                                    <span className="text-teal-600 font-bold mr-2 mt-0.5">•</span>
+                                    {tip}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
           </div>
         )}

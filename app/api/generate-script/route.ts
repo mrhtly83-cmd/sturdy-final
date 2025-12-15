@@ -8,41 +8,42 @@ const openai = new OpenAI({
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
-  // We now receive 'profile' and 'tone' from the front end
   const { message, childAge, gender, struggle, profile, tone, mode } = await req.json();
 
   let SYSTEM_PROMPT = '';
+  let USER_MESSAGE = '';
 
   if (mode === 'coparent') {
     // --- MODE 2: CO-PARENTING TEXT REWRITER (Unchanged) ---
     SYSTEM_PROMPT = `
       You are 'Sturdy Co-Parent', a conflict-resolution expert.
       Your goal is to rewrite the user's angry/frustrated text message to their co-parent (ex-partner).
-      
-      RULES:
-      1. Remove all emotion, sarcasm, and blame.
-      2. Keep it "BIFF": Brief, Informative, Friendly, Firm.
-      3. Output ONLY the rewritten text message. No intro, no explanations.
+      RULES: Remove all emotion, sarcasm, and blame. Keep it "BIFF": Brief, Informative, Friendly, Firm.
+      Output ONLY the rewritten text message. No intro, no explanations.
     `;
+    USER_MESSAGE = message;
+    
   } else {
-    // --- MODE 1: PARENTING SCRIPT (UPGRADED) ---
+    // --- MODE 1: PARENTING SCRIPT (UPGRADED for Smarter Answers and Tone) ---
+    
+    // 1. TONE ADJUSTMENT RULES
     const TONE_ADJUSTMENT = `
       The parent has requested a script with a "${tone}" tone.
-      - If "Gentle": Prioritize empathy and soft language. Focus less on immediate consequence.
-      - If "Firm": Use clear, concise language and strong boundaries, but maintain kindness (no yelling).
-      - If "Balanced": Combine validation with clear expectations.
+      - If "Gentle": Prioritize empathy. Use phrases like "I see," "I wonder," and "Let's explore." Focus on connection.
+      - If "Firm": Use directives and clear expectations. Use phrases like "I expect," "The rule is," and "We must." Focus on boundaries.
     `;
 
+    // 2. PROFILE ADJUSTMENT RULES
     const PROFILE_ADJUSTMENT = profile === 'Neurotypical' ? '' : `
       IMPORTANT: The child has a "${profile}" profile.
-      - Must use short, direct, and explicit language. Avoid idioms and sarcasm.
-      - Focus on one step at a time. Do not overwhelm with options.
-      - Use visual cues or body language suggestions if possible.
+      - Scripts must be short, direct, and explicit. Avoid abstract language.
+      - Always offer sensory or movement alternatives if the struggle is about big emotions.
     `;
-
+    
+    // 3. NEW AI OUTPUT STRUCTURE (TO BE PARSED ON FRONT END)
     SYSTEM_PROMPT = `
-      You are 'Sturdy Parent', a wise, therapeutic AI coach.
-      
+      You are 'Sturdy Parent', a therapeutic AI coach. Your goal is to provide comprehensive, actionable advice.
+
       CORE PHILOSOPHY: Connection before correction. Always validate the feeling before fixing the behavior.
       
       ${PROFILE_ADJUSTMENT}
@@ -50,9 +51,16 @@ export async function POST(req: Request) {
 
       CONTEXT: Child is ${gender}, Age: ${childAge}, Struggle: ${struggle}.
       
-      TASK: Provide a specific, 2-3 sentence script for the parent to say.
-      Then, provide a 1-sentence "Why it works" explanation.
+      Your response MUST be formatted strictly with the following three sections, separated by triple hashtags (###).
+      
+      SECTION 1: SCRIPT (The exact words to say, 2-3 sentences, using the requested tone.)
+      ###
+      SECTION 2: SUMMARY (A 1-sentence title or summary of the *strategy* used, e.g., "The Connection First Strategy")
+      ###
+      SECTION 3: WHY IT WORKS (A bulleted list of 2-3 short, actionable tips explaining the psychology and technique.)
     `;
+
+    USER_MESSAGE = `Situation: ${message}. Generate the full structured response.`;
   }
 
   const response = await openai.chat.completions.create({
@@ -60,7 +68,7 @@ export async function POST(req: Request) {
     stream: true,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: message },
+      { role: 'user', content: USER_MESSAGE },
     ],
   });
 
