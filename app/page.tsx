@@ -18,6 +18,8 @@ import ManifestoContent from './_components/ManifestoContent';
 type HistoryItem = {
   id: string;
   date: string;
+  dateISO?: string;
+  createdAt?: number;
   type: 'script' | 'coparent';
   situation: string;
   result: string;
@@ -114,6 +116,20 @@ const parseCompletion = (completion: string) => {
     return { script: stripSectionLabel(completion), summary: null, whyItWorks: [], troubleshooting: [] };
 };
 
+const toISODate = (date: Date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+const safeISOFromHistoryItem = (item: HistoryItem) => {
+  if (item.dateISO && /^\d{4}-\d{2}-\d{2}$/.test(item.dateISO)) return item.dateISO;
+  const parsed = new Date(item.createdAt ?? item.date);
+  if (!Number.isNaN(parsed.getTime())) return toISODate(parsed);
+  return null;
+};
+
 // --- TONE LOGIC (Fixing the slider display) ---
 const getToneFromValue = (value: number): 'Gentle' | 'Balanced' | 'Firm' => {
     return value === 1 ? 'Gentle' : value === 3 ? 'Firm' : 'Balanced';
@@ -146,6 +162,12 @@ function AppContent() {
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [scriptView, setScriptView] = useState<'script' | 'why' | 'troubleshoot'>('script'); // State for horizontal script view
+  const [journalView, setJournalView] = useState<'list' | 'calendar'>('list');
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedJournalDayISO, setSelectedJournalDayISO] = useState<string | null>(null);
 
   // Monetization State
   const [usageCount, setUsageCount] = useState(0);
@@ -200,7 +222,9 @@ function AppContent() {
 
       const newItem: HistoryItem = {
         id: Date.now().toString(),
+        createdAt: Date.now(),
         date: new Date().toLocaleDateString(),
+        dateISO: toISODate(new Date()),
         type,
         situation,
         result
@@ -243,6 +267,26 @@ function AppContent() {
   };
   
   const parsedResponse = useMemo(() => parseCompletion(completion), [completion]);
+
+  const journalEntriesByISO = useMemo(() => {
+    const map = new Map<string, HistoryItem[]>();
+    for (const item of historyList) {
+      const iso = safeISOFromHistoryItem(item);
+      if (!iso) continue;
+      const list = map.get(iso) ?? [];
+      list.push(item);
+      map.set(iso, list);
+    }
+    for (const items of map.values()) {
+      items.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    }
+    return map;
+  }, [historyList]);
+
+  const selectedDayEntries = useMemo(() => {
+    if (!selectedJournalDayISO) return [];
+    return journalEntriesByISO.get(selectedJournalDayISO) ?? [];
+  }, [journalEntriesByISO, selectedJournalDayISO]);
 
   // --- RENDER: 1. SPLASH SCREEN ---
   if (showSplash) {
@@ -606,13 +650,53 @@ function AppContent() {
         {/* TAB 2: JOURNAL */}
         {activeTab === 'journal' && (
           <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500">
-            <header className="mb-6 flex justify-between items-center mt-4">
-              <h1 className="text-2xl font-bold text-white">Your Journal</h1>
-              <button onClick={clearHistory} className="text-xs text-red-200 bg-red-900/30 px-3 py-1 rounded-full">Clear</button>
+            <header className="mb-5 flex items-center justify-between mt-4">
+              <div>
+                <h1 className="text-2xl font-bold text-white">Your Journal</h1>
+                <p className="text-xs text-white/60">Saved scripts and rewrites on this device.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-xl bg-white/10 p-1 backdrop-blur">
+                  <button
+                    onClick={() => setJournalView('list')}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${journalView === 'list' ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white'}`}
+                  >
+                    List
+                  </button>
+                  <button
+                    onClick={() => {
+                      setJournalView('calendar');
+                      const todayISO = toISODate(new Date());
+                      setSelectedJournalDayISO((prev) => prev ?? todayISO);
+                    }}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${journalView === 'calendar' ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white'}`}
+                  >
+                    Calendar
+                  </button>
+                </div>
+                <button
+                  onClick={clearHistory}
+                  className="text-xs text-red-200 bg-red-900/30 px-3 py-2 rounded-xl border border-red-500/20"
+                >
+                  Clear
+                </button>
+              </div>
             </header>
-            <div className="space-y-4">
-              {historyList.length === 0 ? (<div className="text-center text-white/50 py-10">No entries yet. Go generate some wisdom!</div>) : (
-                historyList.map((item) => (
+
+            {historyList.length === 0 ? (
+              <div className="text-center text-white/60 py-12 rounded-3xl border border-white/10 bg-white/5 backdrop-blur">
+                <p className="text-base font-semibold text-white">No entries yet</p>
+                <p className="mt-2 text-sm text-white/60">Generate a script and it will show up here.</p>
+                <button
+                  onClick={() => setActiveTab('home')}
+                  className="mt-6 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-teal-500 hover:to-emerald-400"
+                >
+                  Create my first script
+                </button>
+              </div>
+            ) : journalView === 'list' ? (
+              <div className="space-y-4">
+                {historyList.map((item) => (
                   <div key={item.id} className="bg-stone-900/40 backdrop-blur-md border border-white/10 p-5 rounded-2xl">
                     <div className="flex justify-between mb-2">
                       <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${item.type === 'coparent' ? 'bg-purple-500/30 text-purple-200' : 'bg-teal-500/30 text-teal-200'}`}>
@@ -623,13 +707,151 @@ function AppContent() {
                     <p className="text-white/60 text-sm italic mb-3">
                       &ldquo;{item.situation}&rdquo;
                     </p>
-                    <div className="text-white text-md font-medium border-l-2 border-white/20 pl-3">
+                    <div className="text-white text-md font-medium border-l-2 border-white/20 pl-3 whitespace-pre-wrap">
                       {item.result}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              (() => {
+                const monthLabel = calendarMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+                const firstDay = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+                const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
+                const startWeekday = firstDay.getDay(); // 0 Sunday
+                const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+                const cells: Array<{ iso: string | null; day: number | null }> = [];
+                for (let i = 0; i < startWeekday; i++) cells.push({ iso: null, day: null });
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const iso = toISODate(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day));
+                  cells.push({ iso, day });
+                }
+                while (cells.length % 7 !== 0) cells.push({ iso: null, day: null });
+
+                return (
+                  <div className="space-y-4">
+                    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4">
+                      <div className="flex items-center justify-between">
+                        <button
+                          onClick={() =>
+                            setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+                          }
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10"
+                        >
+                          Prev
+                        </button>
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-white">{monthLabel}</p>
+                          <button
+                            onClick={() => {
+                              const now = new Date();
+                              setCalendarMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                              setSelectedJournalDayISO(toISODate(now));
+                            }}
+                            className="text-xs text-teal-200 hover:text-teal-100"
+                          >
+                            Jump to today
+                          </button>
+                        </div>
+                        <button
+                          onClick={() =>
+                            setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+                          }
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white/80 hover:bg-white/10"
+                        >
+                          Next
+                        </button>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold text-white/50">
+                        {dayLabels.map((d) => (
+                          <div key={d}>{d}</div>
+                        ))}
+                      </div>
+                      <div className="mt-2 grid grid-cols-7 gap-2">
+                        {cells.map((cell, idx) => {
+                          if (!cell.iso || !cell.day) return <div key={idx} className="h-12" />;
+
+                          const items = journalEntriesByISO.get(cell.iso) ?? [];
+                          const scriptCount = items.filter((i) => i.type === 'script').length;
+                          const coparentCount = items.filter((i) => i.type === 'coparent').length;
+                          const isSelected = selectedJournalDayISO === cell.iso;
+                          const isToday = cell.iso === toISODate(new Date());
+
+                          return (
+                            <button
+                              key={cell.iso}
+                              onClick={() => setSelectedJournalDayISO(cell.iso)}
+                              className={[
+                                'h-12 rounded-2xl border text-left px-3 py-2 transition',
+                                isSelected
+                                  ? 'border-teal-400/60 bg-teal-500/15'
+                                  : 'border-white/10 bg-white/5 hover:bg-white/10',
+                              ].join(' ')}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-white">
+                                  {cell.day}
+                                </span>
+                                {isToday && (
+                                  <span className="text-[10px] font-bold text-teal-200">•</span>
+                                )}
+                              </div>
+                              <div className="mt-1 flex gap-1">
+                                {scriptCount > 0 && (
+                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-300" />
+                                )}
+                                {coparentCount > 0 && (
+                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-purple-300" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-white">
+                          {selectedJournalDayISO ? selectedJournalDayISO : 'Pick a day'}
+                        </p>
+                        {selectedJournalDayISO && (
+                          <p className="text-xs text-white/60">
+                            {selectedDayEntries.length} entr{selectedDayEntries.length === 1 ? 'y' : 'ies'}
+                          </p>
+                        )}
+                      </div>
+
+                      {!selectedJournalDayISO ? (
+                        <p className="mt-3 text-sm text-white/60">Select a date to view saved scripts.</p>
+                      ) : selectedDayEntries.length === 0 ? (
+                        <p className="mt-3 text-sm text-white/60">No entries saved on this day.</p>
+                      ) : (
+                        <div className="mt-4 space-y-3">
+                          {selectedDayEntries.map((item) => (
+                            <div key={item.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                              <div className="flex items-center justify-between">
+                                <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${item.type === 'coparent' ? 'bg-purple-500/30 text-purple-200' : 'bg-teal-500/30 text-teal-200'}`}>
+                                  {item.type === 'coparent' ? 'Co-Parenting' : 'Script'}
+                                </span>
+                                <span className="text-xs text-white/40">{item.date}</span>
+                              </div>
+                              <p className="mt-3 text-sm text-white/70 italic">
+                                &ldquo;{item.situation}&rdquo;
+                              </p>
+                              <div className="mt-3 text-sm text-white whitespace-pre-wrap border-l-2 border-white/10 pl-3">
+                                {item.result}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
         )}
 
