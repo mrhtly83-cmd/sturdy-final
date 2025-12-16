@@ -89,6 +89,22 @@ const stripSectionLabel = (text: string) => {
     .trim();
 };
 
+const stripSectionSeparators = (text: string) => {
+  return text
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      if (/^#{3,}\s*$/.test(trimmed)) return false;
+      if (/^section\s*\d+\s*:/i.test(trimmed)) return false;
+      return true;
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+};
+
 // Function to parse the multi-part AI response (4 SECTIONS)
 const parseCompletion = (completion: string) => {
     // 1. Use a robust split based on the '###' separator
@@ -161,7 +177,7 @@ function AppContent() {
 
   const [historyList, setHistoryList] = useState<HistoryItem[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [scriptView, setScriptView] = useState<'script' | 'why' | 'troubleshoot'>('script'); // State for horizontal script view
+  // Removed tabbed view in favor of collapsible sections
   const [journalView, setJournalView] = useState<'list' | 'calendar'>('list');
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -245,7 +261,7 @@ function AppContent() {
     onFinish: (_prompt, result) => {
       const type = activeTab === 'coparent' ? 'coparent' : 'script';
       const situation = activeTab === 'coparent' ? coparentText : situationText; // Use the situation state
-      setScriptView('script'); // Reset view to script after completion
+      // no-op: collapsible sections always start from top
 
       const newItem: HistoryItem = {
         id: Date.now().toString(),
@@ -304,6 +320,10 @@ function AppContent() {
   };
   
   const parsedResponse = useMemo(() => parseCompletion(completion), [completion]);
+  const cleanedCoparentText = useMemo(
+    () => stripSectionSeparators(stripSectionLabel(completion)),
+    [completion]
+  );
 
   const journalEntriesByISO = useMemo(() => {
     const map = new Map<string, HistoryItem[]>();
@@ -381,7 +401,6 @@ function AppContent() {
           onGetStarted={() => {
             setActiveTab('home');
             setHomeStep(1);
-            setScriptView('script');
             setShowWelcome(false);
           }}
           onSeeManifesto={() => {
@@ -626,74 +645,70 @@ function AppContent() {
             
             <div className="p-4 text-slate-800">
                 
-                {/* HORIZONTAL NAV FOR SCRIPT TABS */}
-                {activeTab === 'home' && (
-                    <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
-                        <button 
-                            onClick={() => setScriptView('script')} 
-                            className={`flex-1 text-sm py-2 rounded-lg font-semibold transition-all ${scriptView === 'script' ? 'bg-teal-500 text-white shadow-md' : 'text-gray-600'}`}>
-                            Words
-                        </button>
-                        <button 
-                            onClick={() => setScriptView('why')} 
-                            className={`flex-1 text-sm py-2 rounded-lg font-semibold transition-all ${scriptView === 'why' ? 'bg-teal-500 text-white shadow-md' : 'text-gray-600'}`}>
-                            Strategy
-                        </button>
-                        <button 
-                            onClick={() => setScriptView('troubleshoot')} 
-                            className={`flex-1 text-sm py-2 rounded-lg font-semibold transition-all ${scriptView === 'troubleshoot' ? 'bg-teal-500 text-white shadow-md' : 'text-gray-600'}`}>
-                            What If?
-                        </button>
-                    </div>
-                )}
-                
-                {/* CONTENT AREA FOR TABS */}
-                <div className="min-h-[150px] relative">
-                    
-                    {/* 1. SCRIPT SECTION */}
-                    <div className={`absolute w-full transition-opacity duration-300 ${scriptView === 'script' ? 'opacity-100 relative' : 'opacity-0 absolute top-0 left-0 pointer-events-none'}`}>
-                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Volume2 className='w-4 h-4 text-teal-600'/> Use These Words
-                        </p>
+                {activeTab === 'home' ? (
+                  <div className="space-y-3">
+                    <details open className="group rounded-xl border border-gray-200 bg-white">
+                      <summary className="cursor-pointer list-none select-none p-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                            <Volume2 className="w-4 h-4 text-teal-600" /> Use These Words
+                          </p>
+                          <span className="text-xs text-gray-400 group-open:hidden">Tap to expand</span>
+                          <span className="text-xs text-gray-400 hidden group-open:inline">Tap to collapse</span>
+                        </div>
+                      </summary>
+                      <div className="px-4 pb-4">
                         <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed border-l-4 border-teal-500/50 pl-3">
-                            {parsedResponse.script}
+                          {parsedResponse.script}
                         </p>
-                    </div>
+                      </div>
+                    </details>
 
-                    {/* 2. WHY IT WORKS SECTION */}
-                    <div className={`absolute w-full transition-opacity duration-300 ${scriptView === 'why' ? 'opacity-100 relative' : 'opacity-0 absolute top-0 left-0 pointer-events-none'}`}>
-                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Lightbulb className='w-4 h-4 text-amber-500 fill-amber-500'/> The Psychology
+                    <details className="group rounded-xl border border-gray-200 bg-white">
+                      <summary className="cursor-pointer list-none select-none p-4">
+                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                          <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-500" /> The Psychology
                         </p>
+                      </summary>
+                      <div className="px-4 pb-4">
                         <ul className="list-none space-y-3 pl-0">
-                            {parsedResponse.whyItWorks.map((tip, index) => (
-                                <li key={index} className="flex items-start text-base text-slate-700">
-                                    <Smile className="w-5 h-5 text-teal-600 shrink-0 mt-0.5 mr-2" />
-                                    {tip}
-                                </li>
-                            ))}
+                          {parsedResponse.whyItWorks.map((tip, index) => (
+                            <li key={index} className="flex items-start text-base text-slate-700">
+                              <Smile className="w-5 h-5 text-teal-600 shrink-0 mt-0.5 mr-2" />
+                              {tip}
+                            </li>
+                          ))}
                         </ul>
-                    </div>
+                      </div>
+                    </details>
 
-                    {/* 3. TROUBLESHOOTING SECTION */}
-                    <div className={`absolute w-full transition-opacity duration-300 ${scriptView === 'troubleshoot' ? 'opacity-100 relative' : 'opacity-0 absolute top-0 left-0 pointer-events-none'}`}>
-                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Zap className='w-4 h-4 text-red-500'/> What If They Resist?
+                    <details className="group rounded-xl border border-gray-200 bg-white">
+                      <summary className="cursor-pointer list-none select-none p-4">
+                        <p className="text-sm font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-red-500" /> What If They Resist?
                         </p>
+                      </summary>
+                      <div className="px-4 pb-4">
                         <ul className="list-none space-y-3 pl-0">
-                            {parsedResponse.troubleshooting.map((tip, index) => (
-                                <li key={index} className="flex items-start text-base text-slate-700">
-                                    <ChevronRight className="w-5 h-5 text-red-500 shrink-0 mt-0.5 mr-2" />
-                                    {tip}
-                                </li>
-                            ))}
+                          {parsedResponse.troubleshooting.map((tip, index) => (
+                            <li key={index} className="flex items-start text-base text-slate-700">
+                              <ChevronRight className="w-5 h-5 text-red-500 shrink-0 mt-0.5 mr-2" />
+                              {tip}
+                            </li>
+                          ))}
                         </ul>
-                    </div>
-                </div>
-
-                {/* Fallback for Co-Parent Tab results */}
-                {activeTab === 'coparent' && (
-                    <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed">{completion}</p>
+                      </div>
+                    </details>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm font-bold text-gray-600 uppercase tracking-widest flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-purple-600" /> Neutral Message
+                    </p>
+                    <p className="text-lg font-medium whitespace-pre-wrap leading-relaxed border-l-4 border-purple-500/40 pl-3">
+                      {cleanedCoparentText}
+                    </p>
+                  </div>
                 )}
             </div>
           </div>
