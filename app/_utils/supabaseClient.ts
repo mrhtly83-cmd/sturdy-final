@@ -9,6 +9,12 @@ export const getSupabase = () => {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+  } catch {
+    return null;
+  }
 
   client = createClient(url, anonKey);
   return client;
