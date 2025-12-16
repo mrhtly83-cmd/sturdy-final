@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getSupabase } from '../_utils/supabaseClient';
 import { Check, LogOut } from 'lucide-react';
 
@@ -9,7 +9,7 @@ export default function AuthPanel({
 }: {
   variant?: 'card' | 'inline';
 }) {
-  const supabase = useMemo(() => getSupabase(), []);
+  const [supabaseReady, setSupabaseReady] = useState<ReturnType<typeof getSupabase> | null>(null);
   const [email, setEmail] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -17,14 +17,18 @@ export default function AuthPanel({
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
+    const sb = getSupabase();
+    setSupabaseReady(sb);
+    if (!sb) return;
+
     let mounted = true;
 
-    supabase.auth.getUser().then(({ data }) => {
+    sb.auth.getUser().then(({ data }) => {
       if (!mounted) return;
       setUserEmail(data.user?.email ?? null);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user?.email ?? null);
     });
 
@@ -32,15 +36,16 @@ export default function AuthPanel({
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, []);
 
   const signInWithGoogle = async () => {
+    if (!supabaseReady) return;
     setError(null);
     setSent(false);
     setIsBusy(true);
     try {
       const origin = window.location.origin;
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
+      const { error: signInError } = await supabaseReady.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: origin },
       });
@@ -54,12 +59,13 @@ export default function AuthPanel({
 
   const sendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabaseReady) return;
     setError(null);
     setSent(false);
     setIsBusy(true);
     try {
       const origin = window.location.origin;
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      const { error: signInError } = await supabaseReady.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: origin },
       });
@@ -73,10 +79,11 @@ export default function AuthPanel({
   };
 
   const signOut = async () => {
+    if (!supabaseReady) return;
     setError(null);
     setIsBusy(true);
     try {
-      const { error: signOutError } = await supabase.auth.signOut();
+      const { error: signOutError } = await supabaseReady.auth.signOut();
       if (signOutError) throw signOutError;
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Unable to sign out.');
@@ -99,6 +106,15 @@ export default function AuthPanel({
         <p className="inline-flex rounded bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.5em] text-white/60">
           ACCOUNT
         </p>
+      )}
+
+      {!supabaseReady && (
+        <div className={isCard ? 'mt-5 space-y-3' : 'space-y-2'}>
+          <p className="text-sm font-semibold text-white">Auth not configured</p>
+          <p className="text-sm text-white/70">
+            Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel (and redeploy).
+          </p>
+        </div>
       )}
 
       {userEmail ? (
@@ -124,7 +140,8 @@ export default function AuthPanel({
           </div>
         </div>
       ) : (
-        <div className={isCard ? 'mt-5 space-y-4' : 'space-y-3'}>
+        supabaseReady && (
+          <div className={isCard ? 'mt-5 space-y-4' : 'space-y-3'}>
           <button
             onClick={signInWithGoogle}
             disabled={isBusy}
@@ -160,11 +177,11 @@ export default function AuthPanel({
           {sent && !error && (
             <p className="text-sm text-emerald-200">Check your inbox for your sign-in link.</p>
           )}
-        </div>
+          </div>
+        )
       )}
 
       {error && <p className="mt-4 text-sm text-rose-200">{error}</p>}
     </div>
   );
 }
-
