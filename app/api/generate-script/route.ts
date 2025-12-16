@@ -21,6 +21,12 @@ type RateState = {
   count: number;
 };
 
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const asString = (v: unknown, fallback: string) =>
+  typeof v === 'string' ? v : fallback;
+
 const getClientIp = (req: Request) => {
   const xff = req.headers.get('x-forwarded-for');
   if (xff) return xff.split(',')[0]?.trim() || 'unknown';
@@ -98,9 +104,6 @@ export async function POST(req: Request) {
   }
 
   // Use destructured variables with default fallbacks to prevent undefined errors
-  const isRecord = (v: unknown): v is Record<string, unknown> =>
-    typeof v === 'object' && v !== null && !Array.isArray(v);
-
   const safeBody = isRecord(body) ? body : {};
 
   const { 
@@ -115,7 +118,11 @@ export async function POST(req: Request) {
 
   const safeMode: Mode = mode === 'coparent' ? 'coparent' : 'script';
   const safeTone: Tone = tone === 'Gentle' || tone === 'Firm' ? tone : 'Balanced';
-  const safeMessage = typeof message === 'string' ? message.trim() : '';
+  const safeMessage = asString(message, '').trim();
+  const safeChildAge = asString(childAge, 'Unknown');
+  const safeGender = asString(gender, 'Neutral');
+  const safeStruggle = asString(struggle, 'General');
+  const safeProfile = asString(profile, 'Neurotypical');
 
   if (!safeMessage) return jsonError('Message is required.', 400);
   if (safeMessage.length > MAX_MESSAGE_CHARS) return jsonError('Message is too long.', 413);
@@ -145,13 +152,13 @@ export async function POST(req: Request) {
 
     // 2. PROFILE ADJUSTMENT RULES
     const PROFILE_ADJUSTMENT = profile === 'Neurotypical' ? '' : `
-      IMPORTANT: The child has a "${profile}" profile.
+      IMPORTANT: The child has a "${safeProfile}" profile.
       - Scripts must be short, direct, and explicit. Avoid abstract language.
       - Always offer sensory or movement alternatives if the struggle is about big emotions.
     `;
     
     // 3. CORE STRUGGLE LOGIC
-    const STRUGGLE_LOGIC = STRUGGLE_RULES[struggle] || 'Rule: Connection before correction.';
+    const STRUGGLE_LOGIC = STRUGGLE_RULES[safeStruggle] || 'Rule: Connection before correction.';
     
     // 4. FINAL SYSTEM PROMPT (4 Sections Required for Front-End)
     SYSTEM_PROMPT = `
@@ -163,7 +170,7 @@ export async function POST(req: Request) {
       ${PROFILE_ADJUSTMENT}
       ${TONE_ADJUSTMENT}
 
-      CONTEXT: Child is ${gender}, Age: ${childAge}, Struggle: ${struggle}.
+      CONTEXT: Child is ${safeGender}, Age: ${safeChildAge}, Struggle: ${safeStruggle}.
       
       Your response MUST be formatted strictly with the following four sections, separated by triple hashtags (###) with a double line break before and after.
       
