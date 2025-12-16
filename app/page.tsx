@@ -168,6 +168,9 @@ function AppContent() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedJournalDayISO, setSelectedJournalDayISO] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   // Monetization State
   const [usageCount, setUsageCount] = useState(0);
@@ -215,6 +218,30 @@ function AppContent() {
   // --- AI CONNECTION ---
   const { complete, completion, isLoading } = useCompletion({
     api: '/api/generate-script',
+    onResponse: async (response) => {
+      if (response.ok) {
+        setGenerateError(null);
+        setCooldownUntil(null);
+        return;
+      }
+      const retryAfterHeader = response.headers.get('retry-after');
+      if (retryAfterHeader) {
+        const seconds = Number.parseInt(retryAfterHeader, 10);
+        if (Number.isFinite(seconds) && seconds > 0) {
+          setCooldownUntil(Date.now() + seconds * 1000);
+        }
+      }
+      try {
+        const data = await response.clone().json();
+        if (data?.error) setGenerateError(String(data.error));
+        else setGenerateError('Something went wrong. Please try again.');
+      } catch {
+        setGenerateError('Something went wrong. Please try again.');
+      }
+    },
+    onError: () => {
+      setGenerateError('Network error. Please try again.');
+    },
     onFinish: (_prompt, result) => {
       const type = activeTab === 'coparent' ? 'coparent' : 'script';
       const situation = activeTab === 'coparent' ? coparentText : situationText; // Use the situation state
@@ -242,8 +269,18 @@ function AppContent() {
     }
   });
 
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const interval = setInterval(() => setNowMs(Date.now()), 500);
+    return () => clearInterval(interval);
+  }, [cooldownUntil]);
+
+  const cooldownSecondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - nowMs) / 1000)) : 0;
+
   const handleGenerate = () => {
     if (!isPro && usageCount >= FREE_LIMIT) return;
+    if (cooldownSecondsLeft > 0) return;
+    setGenerateError(null);
     
     if (activeTab === 'coparent') {
       complete('', { body: { message: coparentText, mode: 'coparent' } });
@@ -341,7 +378,12 @@ function AppContent() {
         <OnboardingScreen
           stats={heroStats}
           highlights={welcomeHighlights}
-          onGetStarted={() => setShowWelcome(false)}
+          onGetStarted={() => {
+            setActiveTab('home');
+            setHomeStep(1);
+            setScriptView('script');
+            setShowWelcome(false);
+          }}
           onSeeManifesto={() => {
             setActiveTab('guide');
             setShowWelcome(false);
@@ -516,11 +558,21 @@ function AppContent() {
                         placeholder={currentPlaceholder}
                         className="min-h-[120px] w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base text-slate-800 outline-none placeholder-slate-400 shadow-inner focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
                       />
+                      {generateError && activeTab === 'home' && (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                          {generateError}
+                        </div>
+                      )}
+                      {cooldownSecondsLeft > 0 && activeTab === 'home' && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                          Please wait {cooldownSecondsLeft}s before trying again.
+                        </div>
+                      )}
                       <div className="rounded-2xl border border-slate-200 bg-white/70 p-4 text-sm text-slate-500">
                         Add sensory detail or the exact words your child used so Sturdy echoes the moment precisely.
                       </div>
                       <button
-                        disabled={isLoading}
+                        disabled={isLoading || cooldownSecondsLeft > 0}
                         onClick={handleGenerate}
                         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
                       >
@@ -873,8 +925,18 @@ function AppContent() {
                   placeholder="Ex: I can't believe you are late again! You are so irresponsible..."
                   className="w-full p-4 bg-black/20 border border-white/10 rounded-xl min-h-[120px] text-white placeholder-white/50 outline-none resize-none"
                 />
+                {generateError && (
+                  <div className="rounded-2xl border border-rose-200/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                    {generateError}
+                  </div>
+                )}
+                {cooldownSecondsLeft > 0 && (
+                  <div className="rounded-2xl border border-amber-200/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                    Please wait {cooldownSecondsLeft}s before trying again.
+                  </div>
+                )}
                 <button
-                  disabled={isLoading}
+                  disabled={isLoading || cooldownSecondsLeft > 0}
                   onClick={handleGenerate}
                   className="w-full bg-gradient-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2"
                 >
