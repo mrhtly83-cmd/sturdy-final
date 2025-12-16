@@ -3,13 +3,16 @@
 import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useCompletion } from 'ai/react';
 import { useSearchParams } from 'next/navigation'; 
+import Image from 'next/image';
 import { 
   Heart, Home as HomeIcon, Users, BookOpen, 
   Copy, Check, Lock, 
-  MessageCircle, ArrowRight, ArrowLeft,
+  MessageCircle, ArrowLeft,
   History, Volume2, Lightbulb, Zap, Smile, ChevronRight,
   Sparkles, ShieldCheck, Timer
 } from 'lucide-react';
+import OnboardingScreen from './_components/OnboardingScreen';
+import ManifestoContent from './_components/ManifestoContent';
 
 // --- TYPES ---
 type HistoryItem = {
@@ -166,20 +169,25 @@ function AppContent() {
 
   // --- 2. LOAD DATA ---
   useEffect(() => {
-    if (searchParams.get('unlocked') === 'true') {
-      localStorage.setItem('sturdy-is-pro', 'true');
-      setIsPro(true);
-      window.history.replaceState(null, '', '/');
-      setShowWelcome(false); 
-      alert("Welcome to the family! Lifetime Access Unlocked. ☀️");
-    } else {
-      const savedPro = localStorage.getItem('sturdy-is-pro');
-      if (savedPro === 'true') setIsPro(true);
-    }
-    const savedHistory = localStorage.getItem('sturdy-history');
-    if (savedHistory) setHistoryList(JSON.parse(savedHistory));
-    const savedCount = localStorage.getItem('sturdy-usage');
-    if (savedCount) setUsageCount(parseInt(savedCount));
+    const timeout = setTimeout(() => {
+      if (searchParams.get('unlocked') === 'true') {
+        localStorage.setItem('sturdy-is-pro', 'true');
+        setIsPro(true);
+        window.history.replaceState(null, '', '/');
+        setShowWelcome(false);
+        alert('Welcome to the family! Lifetime Access Unlocked. ☀️');
+      } else {
+        const savedPro = localStorage.getItem('sturdy-is-pro');
+        if (savedPro === 'true') setIsPro(true);
+      }
+
+      const savedHistory = localStorage.getItem('sturdy-history');
+      if (savedHistory) setHistoryList(JSON.parse(savedHistory));
+      const savedCount = localStorage.getItem('sturdy-usage');
+      if (savedCount) setUsageCount(parseInt(savedCount));
+    }, 0);
+
+    return () => clearTimeout(timeout);
   }, [searchParams]);
 
   // --- AI CONNECTION ---
@@ -239,15 +247,40 @@ function AppContent() {
   // --- RENDER: 1. SPLASH SCREEN ---
   if (showSplash) {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center">
-        <div className="relative animate-pulse">
-          <svg className="w-24 h-24 text-teal-500 animate-spin-slow duration-[3000ms]" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-          </svg>
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black">
+        <video autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover opacity-70">
+          <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
+
+        <div className="absolute -left-24 top-24 h-72 w-72 rounded-full bg-teal-500/20 blur-3xl animate-[sturdyGlow_6s_ease-in-out_infinite]" />
+        <div className="absolute -right-24 bottom-24 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl animate-[sturdyGlow_7s_ease-in-out_infinite]" />
+
+        <div className="relative mx-auto w-full max-w-sm px-6 text-center text-white">
+          <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-3xl bg-white/10 backdrop-blur-xl ring-1 ring-white/15 shadow-[0_30px_120px_rgba(0,0,0,0.55)] animate-[sturdyPop_700ms_ease-out_forwards]">
+            <Image
+              src="/assets/star.png"
+              alt=""
+              width={40}
+              height={40}
+              priority
+              className="h-10 w-10 drop-shadow-[0_10px_40px_rgba(20,184,166,0.35)]"
+            />
+          </div>
+
+          <h1 className="text-2xl font-extrabold tracking-[0.35em] animate-[sturdyPop_800ms_ease-out_forwards] [animation-delay:120ms] opacity-0">
+            STURDY PARENT
+          </h1>
+          <p className="mt-4 text-white/80 text-base leading-relaxed animate-[sturdyPop_900ms_ease-out_forwards] [animation-delay:260ms] opacity-0">
+            A calmer home starts with calmer words.
+          </p>
+
+          <div className="mt-10 flex items-center justify-center gap-2 text-white/70 animate-[sturdyPop_900ms_ease-out_forwards] [animation-delay:420ms] opacity-0">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-300 animate-[sturdyGlow_1.4s_ease-in-out_infinite]" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-300/80 animate-[sturdyGlow_1.4s_ease-in-out_infinite] [animation-delay:180ms]" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-teal-300/60 animate-[sturdyGlow_1.4s_ease-in-out_infinite] [animation-delay:360ms]" />
+          </div>
         </div>
-        <h1 className="text-teal-900 text-xl font-bold mt-6 tracking-widest animate-in fade-in duration-1000 slide-in-from-bottom-4">
-          STURDY PARENT
-        </h1>
       </div>
     );
   }
@@ -255,90 +288,21 @@ function AppContent() {
   // --- RENDER: 2. WELCOME / LANDING PAGE ---
   if (showWelcome) {
     return (
-      <div className="relative z-10 flex min-h-screen flex-col justify-center px-6 pb-10 pt-16 font-sans">
+      <div className="relative z-10 flex min-h-screen flex-col justify-center font-sans">
         <video autoPlay loop muted playsInline className="fixed inset-0 -z-10 h-full w-full object-cover">
           <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
         </video>
         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-black via-black/80 to-teal-900/40" />
 
-        <div className="mx-auto w-full max-w-5xl space-y-10 text-white animate-in fade-in slide-in-from-bottom-10 duration-700">
-          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
-            <div className="rounded-full bg-white/20 p-2 backdrop-blur">
-              <Heart className="h-4 w-4 text-teal-200" />
-            </div>
-            Calm Starts Here
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-[1.1fr_0.9fr]">
-            <section className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl">
-                  Instant scripts for meltdowns, sibling drama, and “I hate you” moments.
-                </h1>
-                <p className="text-lg text-white/85 md:text-xl">
-                  Sturdy translates tense moments into calm, connected language that keeps everyone’s nervous system regulated.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={() => setShowWelcome(false)}
-                  className="flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-base font-semibold text-teal-900 shadow-2xl transition hover:-translate-y-0.5 hover:bg-teal-50"
-                >
-                  Get Started <ArrowRight className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('guide');
-                    setShowWelcome(false);
-                  }}
-                  className="rounded-full border border-white/30 px-6 py-3 text-base font-semibold text-white/90 backdrop-blur transition hover:border-white hover:bg-white/10"
-                >
-                  See the manifesto
-                </button>
-              </div>
-
-              <div className="flex flex-wrap gap-6 rounded-3xl bg-white/5 p-6 backdrop-blur">
-                {heroStats.map((stat) => (
-                  <div key={stat.label} className="flex-1 min-w-[140px]">
-                    <p className="text-2xl font-bold text-white">{stat.value}</p>
-                    <p className="text-sm text-white/60">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <aside className="space-y-6 rounded-3xl bg-black/40 p-6 backdrop-blur-xl ring-1 ring-white/10">
-              <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-wider text-white/60">What Sturdy Feels Like</p>
-                <div className="space-y-3">
-                  {welcomeHighlights.map(({ title, description, icon: Icon }) => (
-                    <div key={title} className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="mt-1 rounded-full bg-white/10 p-2">
-                        <Icon className="h-4 w-4 text-teal-200" />
-                      </div>
-                      <div>
-                        <p className="text-base font-semibold">{title}</p>
-                        <p className="text-sm text-white/70">{description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-2xl bg-white/10 p-5 shadow-2xl backdrop-blur">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Scripts in action</p>
-                <div className="mt-4 space-y-4">
-                  {scenarioCards.map((card) => (
-                    <div key={card.title} className="rounded-xl bg-black/30 p-4 ring-1 ring-white/10">
-                      <p className="text-sm font-semibold uppercase tracking-wide text-teal-200">{card.title}</p>
-                      <p className="mt-2 text-base text-white/85">{card.script}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </aside>
-          </div>
-        </div>
+        <OnboardingScreen
+          stats={heroStats}
+          highlights={welcomeHighlights}
+          onGetStarted={() => setShowWelcome(false)}
+          onSeeManifesto={() => {
+            setActiveTab('guide');
+            setShowWelcome(false);
+          }}
+        />
       </div>
     );
   }
@@ -654,7 +618,9 @@ function AppContent() {
                       </span>
                       <span className="text-xs text-white/40">{item.date}</span>
                     </div>
-                    <p className="text-white/60 text-sm italic mb-3">"{item.situation}"</p>
+                    <p className="text-white/60 text-sm italic mb-3">
+                      &ldquo;{item.situation}&rdquo;
+                    </p>
                     <div className="text-white text-md font-medium border-l-2 border-white/20 pl-3">
                       {item.result}
                     </div>
@@ -702,16 +668,7 @@ function AppContent() {
             <header className="mb-6 mt-4">
               <h1 className="text-2xl font-bold text-white">The Manifesto</h1>
             </header>
-            <div className="space-y-4">
-              <div className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border-l-4 border-amber-400">
-                <h3 className="font-bold text-amber-200 mb-1">Rupture & Repair</h3>
-                <p className="text-sm text-white/80">You don't have to be perfect. If you lose your cool, apologize. The repair builds the bond stronger than before.</p>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md p-5 rounded-2xl border-l-4 border-teal-400">
-                <h3 className="font-bold text-teal-200 mb-1">Connection Before Correction</h3>
-                <p className="text-sm text-white/80">Before you teach a lesson, connect with the feeling. "I see you are sad" comes before "We don't hit."</p>
-              </div>
-            </div>
+            <ManifestoContent />
           </div>
         )}
       </div>
@@ -744,7 +701,9 @@ function AppContent() {
           <div className="bg-white rounded-3xl p-8 max-w-sm text-center shadow-2xl animate-in zoom-in">
             <Lock className="w-12 h-12 text-teal-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-slate-800 mb-2">Unlock Sturdy Parent</h2>
-            <p className="text-slate-600 mb-6">You've hit your free limit. Get unlimited scripts, co-parenting tools, and journal access.</p>
+            <p className="text-slate-600 mb-6">
+              You&apos;ve hit your free limit. Get unlimited scripts, co-parenting tools, and journal access.
+            </p>
             <a href={STRIPE_LINK} className="block w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
               Get Lifetime Access ($9.99)
             </a>
