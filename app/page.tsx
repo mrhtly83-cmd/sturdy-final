@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import OnboardingScreen from './_components/OnboardingScreen';
 import ManifestoContent from './_components/ManifestoContent';
+import SignInPanel from './_components/SignInPanel';
 
 // --- TYPES ---
 type HistoryItem = {
@@ -294,15 +295,23 @@ function AppContent() {
         </video>
         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-black via-black/80 to-teal-900/40" />
 
-        <OnboardingScreen
-          stats={heroStats}
-          highlights={welcomeHighlights}
-          onGetStarted={() => setShowWelcome(false)}
-          onSeeManifesto={() => {
-            setActiveTab('guide');
-            setShowWelcome(false);
-          }}
-        />
+        <div className="relative">
+          <OnboardingScreen
+            stats={heroStats}
+            highlights={welcomeHighlights}
+            onGetStarted={() => setShowWelcome(false)}
+            onSeeManifesto={() => {
+              setActiveTab('guide');
+              setShowWelcome(false);
+            }}
+          />
+          <div className="mx-auto w-full max-w-5xl px-6 pb-10">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="hidden md:block" />
+              <SignInPanel />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
