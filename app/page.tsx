@@ -9,7 +9,7 @@ import {
   Copy, Check, Lock, 
   MessageCircle, ArrowLeft,
   History, Volume2, Lightbulb, Zap, Smile, ChevronRight,
-  Sparkles, ShieldCheck, Timer
+  Sparkles, ShieldCheck, Timer, BadgeCheck
 } from 'lucide-react';
 import OnboardingScreen from './_components/OnboardingScreen';
 import ManifestoContent from './_components/ManifestoContent';
@@ -187,6 +187,7 @@ function AppContent() {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [toast, setToast] = useState<string | null>(null);
 
   // Monetization State
   const [usageCount, setUsageCount] = useState(0);
@@ -216,7 +217,7 @@ function AppContent() {
         setIsPro(true);
         window.history.replaceState(null, '', '/');
         setShowWelcome(false);
-        alert('Welcome to the family! Lifetime Access Unlocked. ☀️');
+        setToast('Lifetime access unlocked. Welcome to Sturdy.');
       } else {
         const savedPro = localStorage.getItem('sturdy-is-pro');
         if (savedPro === 'true') setIsPro(true);
@@ -230,6 +231,12 @@ function AppContent() {
 
     return () => clearTimeout(timeout);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // --- AI CONNECTION ---
   const { complete, completion, isLoading } = useCompletion({
@@ -414,7 +421,14 @@ function AppContent() {
 
   // --- RENDER: 3. THE MAIN APP ---
   return (
-    <div className="relative z-10 flex flex-col min-h-screen font-sans pb-24 animate-in fade-in duration-500">
+    <div className="relative z-10 flex flex-col min-h-screen font-sans pb-24 animate-in fade-in duration-500 sturdy-grain">
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+          <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-sm text-white shadow-2xl backdrop-blur-xl">
+            {toast}
+          </div>
+        </div>
+      )}
       
       {/* CONTENT AREA */}
       <div className="flex-1 p-6 pt-4 overflow-y-auto">
@@ -426,9 +440,13 @@ function AppContent() {
               <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Personalized guidance</p>
               <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <h1 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl">Design the words that calm your home.</h1>
-                <div className="flex gap-4 text-sm text-white/70">
-                  {heroStats.map((stat) => (
-                    <div key={stat.label}>
+                <div className="flex flex-wrap items-center justify-start gap-3 text-sm text-white/70">
+                  <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur ${isPro ? 'border-teal-400/40 bg-teal-500/10 text-teal-100' : 'border-white/15 bg-white/5 text-white/70'}`}>
+                    <BadgeCheck className="h-4 w-4" />
+                    {isPro ? 'Lifetime access' : `${Math.max(0, FREE_LIMIT - usageCount)} free left`}
+                  </span>
+                  {heroStats.slice(0, 2).map((stat) => (
+                    <div key={stat.label} className="hidden sm:block">
                       <p className="text-lg font-semibold text-white">{stat.value}</p>
                       <p>{stat.label}</p>
                     </div>
@@ -619,12 +637,32 @@ function AppContent() {
                 <div className="rounded-[32px] border border-teal-500/30 bg-gradient-to-br from-teal-600/40 to-emerald-500/30 p-6 text-white shadow-2xl backdrop-blur">
                   <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/70">Why parents love it</p>
                   <div className="mt-4 space-y-3 text-base text-white/90">
-                    <p>✨ Micro copy that lands even when emotions peak.</p>
-                    <p>🧠 Strategies rooted in attachment science, not random scripts.</p>
-                    <p>📱 Built for one-handed use in the hallway outside the tantrum.</p>
+                    <p className="flex items-start gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-200" /> Micro copy that lands even when emotions peak.</p>
+                    <p className="flex items-start gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-200" /> Strategies rooted in attachment science, not random scripts.</p>
+                    <p className="flex items-start gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-200" /> Built for one-handed use during real life.</p>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* LOADING RESULT SKELETON */}
+        {(activeTab === 'home' || activeTab === 'coparent') && isLoading && !completion && (
+          <div className="max-w-md mx-auto mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur animate-in fade-in">
+            <div className={`p-4 text-white font-bold ${activeTab === 'coparent' ? 'bg-gradient-to-r from-purple-600 to-indigo-500' : 'bg-gradient-to-r from-teal-600 to-emerald-500'}`}>
+              <p className="text-xs uppercase tracking-widest">
+                {activeTab === 'coparent' ? 'NEUTRAL MESSAGE' : 'GENERATING SCRIPT'}
+              </p>
+            </div>
+            <div className="p-4 space-y-4 bg-white/90">
+              <div className="h-5 w-40 rounded-lg sturdy-skeleton" />
+              <div className="space-y-2">
+                <div className="h-4 w-full rounded-lg sturdy-skeleton" />
+                <div className="h-4 w-11/12 rounded-lg sturdy-skeleton" />
+                <div className="h-4 w-9/12 rounded-lg sturdy-skeleton" />
+              </div>
+              <div className="h-10 w-full rounded-xl sturdy-skeleton" />
             </div>
           </div>
         )}
@@ -999,15 +1037,49 @@ function AppContent() {
       {/* PAYWALL ALERT (Global) */}
       {!isPro && usageCount >= FREE_LIMIT && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
-          <div className="bg-white rounded-3xl p-8 max-w-sm text-center shadow-2xl animate-in zoom-in">
-            <Lock className="w-12 h-12 text-teal-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-slate-800 mb-2">Unlock Sturdy Parent</h2>
-            <p className="text-slate-600 mb-6">
-              You&apos;ve hit your free limit. Get unlimited scripts, co-parenting tools, and journal access.
-            </p>
-            <a href={STRIPE_LINK} className="block w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700">
-              Get Lifetime Access ($9.99)
-            </a>
+          <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-b from-white to-slate-50 shadow-[0_40px_140px_rgba(0,0,0,0.55)] animate-in zoom-in">
+            <div className="bg-gradient-to-r from-teal-600 to-emerald-500 px-7 py-6 text-white">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/80">Upgrade</p>
+                  <h2 className="mt-2 text-2xl font-extrabold">Lifetime access</h2>
+                  <p className="mt-1 text-white/85">One payment. Calm tools forever.</p>
+                </div>
+                <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div className="mt-5 flex items-baseline justify-between rounded-2xl border border-white/15 bg-white/10 px-4 py-3">
+                <p className="text-3xl font-extrabold">$9.99</p>
+                <p className="text-sm text-white/80">one-time • no subscription</p>
+              </div>
+            </div>
+
+            <div className="px-7 py-6">
+              <p className="text-sm font-semibold text-slate-900">Everything included</p>
+              <ul className="mt-3 space-y-3 text-sm text-slate-700">
+                <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Unlimited scripts + co-parent rewrites</li>
+                <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Journal with calendar view</li>
+                <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Tone + neurotype tuning</li>
+              </ul>
+
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">Why it works</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  These scripts are designed to validate feelings, set firm boundaries, and lower escalation in the moment.
+                </p>
+              </div>
+
+              <a
+                href={STRIPE_LINK}
+                className="mt-6 block w-full rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-4 text-center text-base font-semibold text-white shadow-lg transition hover:from-teal-500 hover:to-emerald-400"
+              >
+                Unlock lifetime access
+              </a>
+              <p className="mt-3 text-center text-xs text-slate-500">
+                Secure checkout • Instant unlock
+              </p>
+            </div>
           </div>
         </div>
       )}

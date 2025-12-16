@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 
 type Stat = { value: string; label: string };
 type Highlight = {
@@ -32,6 +32,17 @@ export default function OnboardingScreen({
           <p className="opacity-0 mx-auto max-w-xl text-base leading-relaxed text-white/75 md:text-lg animate-[sturdyPop_1400ms_ease-out_forwards] [animation-delay:420ms]">
             Handle hard parenting moments with language designed to reduce conflict and build connection.
           </p>
+          <div className="opacity-0 mx-auto mt-6 inline-flex flex-wrap items-center justify-center gap-2 animate-[sturdyPop_1400ms_ease-out_forwards] [animation-delay:560ms]">
+            <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 backdrop-blur">
+              Lifetime access
+            </span>
+            <span className="rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-2 text-xs font-semibold text-teal-100 backdrop-blur">
+              $9.99 one-time
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 backdrop-blur">
+              Cancel-proof. No subscription.
+            </span>
+          </div>
         </div>
 
         <div className="mx-auto grid w-full gap-6 md:grid-cols-[1fr_1fr]">
@@ -67,6 +78,17 @@ export default function OnboardingScreen({
                 </span>
               </button>
             </div>
+            <div className="opacity-0 mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-white/60 animate-[sturdyPop_1200ms_ease-out_forwards] [animation-delay:2100ms]">
+              <span className="inline-flex items-center gap-2">
+                <Check className="h-4 w-4 text-teal-200" /> Saved journal
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Check className="h-4 w-4 text-teal-200" /> Co-parent rewrites
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Check className="h-4 w-4 text-teal-200" /> Unlimited lifetime access
+              </span>
+            </div>
           </div>
 
           <div className="opacity-0 rounded-[32px] border border-white/10 bg-black/35 p-6 shadow-2xl backdrop-blur-xl animate-[sturdyPop_1400ms_ease-out_forwards] [animation-delay:980ms]">
@@ -89,6 +111,9 @@ export default function OnboardingScreen({
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="opacity-0 mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70 animate-[sturdyPop_1100ms_ease-out_forwards] [animation-delay:1700ms]">
+              “I used this in the carpool line and it immediately changed the tone.” <span className="text-white/50">— parent of two</span>
             </div>
           </div>
         </div>

@@ -57,3 +57,49 @@ body {
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
+
+@keyframes sturdyShimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.sturdy-grain::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -5;
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.35) 0, transparent 25%),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.22) 0, transparent 22%),
+    radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.2) 0, transparent 18%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  filter: blur(0.2px);
+}
+
+.sturdy-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.08), rgba(15, 23, 42, 0.04));
+}
+
+.sturdy-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: sturdyShimmer 1.6s ease-in-out infinite;
+}
