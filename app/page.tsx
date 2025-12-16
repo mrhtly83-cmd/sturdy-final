@@ -978,8 +978,8 @@ function AppContent() {
                       </div>
 
                       <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-semibold text-white/50">
-                        {dayLabels.map((d) => (
-                          <div key={d}>{d}</div>
+                        {dayLabels.map((d, idx) => (
+                          <div key={`${d}-${idx}`}>{d}</div>
                         ))}
                       </div>
                       <div className="mt-2 grid grid-cols-7 gap-2">
