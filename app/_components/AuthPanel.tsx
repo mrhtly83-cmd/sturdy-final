@@ -112,7 +112,7 @@ export default function AuthPanel({
         <div className={isCard ? 'mt-5 space-y-3' : 'space-y-2'}>
           <p className="text-sm font-semibold text-white">Auth not configured</p>
           <p className="text-sm text-white/70">
-            Check `NEXT_PUBLIC_SUPABASE_URL` is a full `https://...supabase.co` URL and `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the anon public key (then redeploy).
+            Set `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `SUPABASE_URL` + `SUPABASE_ANON_KEY`) and redeploy.
           </p>
         </div>
       )}
