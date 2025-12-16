@@ -359,10 +359,11 @@ function AppContent() {
                     </button>
                   )}
 
-                  <div
-                    className="relative flex overflow-hidden transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(-${(homeStep - 1) * 100}%)` }}
-                  >
+                  <div className="w-full overflow-hidden">
+                    <div
+                      className="relative flex w-full will-change-transform transition-transform duration-500 ease-in-out"
+                      style={{ transform: `translateX(-${(homeStep - 1) * 100}%)` }}
+                    >
                     {/* STEP 1: KID DETAILS */}
                     <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">1. Who is the child?</h2>
@@ -482,6 +483,7 @@ function AppContent() {
                         <Heart className="h-5 w-5 fill-white/20" />
                         {isLoading ? 'Generating Sturdy guidance...' : 'Get my script'}
                       </button>
+                    </div>
                     </div>
                   </div>
                 </div>
