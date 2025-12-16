@@ -1,5 +1,7 @@
 import { OpenAIStream, StreamingTextResponse } from 'ai';
 import OpenAI from 'openai';
+import { getSupabaseAdmin } from '../../_utils/supabaseServer';
+import { PLANS, type PlanId } from '../../_utils/plans';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
@@ -66,6 +68,12 @@ const jsonError = (message: string, status = 400, headers?: HeadersInit) => {
   });
 };
 
+const getBearer = (req: Request) => {
+  const header = req.headers.get('authorization') || '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] ?? null;
+};
+
 // --- STRUGGLE-SPECIFIC RULES ---
 const STRUGGLE_RULES: { [key: string]: string } = {
   'Big Emotions': 'Rule: Be the calm container. Focus on naming the feeling and staying present, not problem-solving.',
@@ -113,7 +121,8 @@ export async function POST(req: Request) {
     struggle = 'General', 
     profile = 'Neurotypical', 
     tone = 'Balanced', 
-    mode = 'script' 
+    mode = 'script',
+    authToken = null,
   } = safeBody;
 
   const safeMode: Mode = mode === 'coparent' ? 'coparent' : 'script';
@@ -126,6 +135,62 @@ export async function POST(req: Request) {
 
   if (!safeMessage) return jsonError('Message is required.', 400);
   if (safeMessage.length > MAX_MESSAGE_CHARS) return jsonError('Message is too long.', 413);
+
+  // --- BILLING/USAGE ENFORCEMENT (requires Supabase service key) ---
+  // If SUPABASE_SERVICE_ROLE_KEY is configured and the user is logged in, enforce plan limits server-side.
+  const admin = getSupabaseAdmin();
+  const bearer = getBearer(req);
+  const tokenFromBody = typeof authToken === 'string' ? authToken : null;
+  const token = bearer ?? tokenFromBody;
+
+  if (admin && token) {
+    const {
+      data: { user },
+      error: authErr,
+    } = await admin.auth.getUser(token);
+    if (authErr || !user) return jsonError('Invalid session.', 401);
+
+    const now = new Date();
+    const { data: ent, error: entErr } = await admin
+      .from('entitlements')
+      .select('plan, period_start, period_end, scripts_used, journal')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (entErr) return jsonError(entErr.message, 500);
+    const planId = (ent?.plan as PlanId | undefined) ?? null;
+    if (!planId) return jsonError('No active plan. Please upgrade to continue.', 402);
+
+    const plan = PLANS[planId];
+    if (!plan) return jsonError('Invalid plan. Please contact support.', 500);
+
+    if (plan.scriptsIncluded !== 'unlimited') {
+      const periodStart = ent?.period_start ? new Date(ent.period_start) : null;
+      const periodEnd = ent?.period_end ? new Date(ent.period_end) : null;
+      const scriptsUsed = Number(ent?.scripts_used ?? 0);
+
+      const inPeriod =
+        periodStart && periodEnd
+          ? now >= periodStart && now <= periodEnd
+          : false;
+
+      // If not in a valid period, require entitlements refresh via webhook/admin.
+      if (!inPeriod) {
+        return jsonError('Your plan period needs refresh. Please retry in a moment.', 409);
+      }
+
+      if (scriptsUsed >= plan.scriptsIncluded) {
+        return jsonError('You’ve reached your script limit for this period.', 402);
+      }
+
+      // Reserve one usage immediately to prevent parallel abuse.
+      const { error: upErr } = await admin
+        .from('entitlements')
+        .update({ scripts_used: scriptsUsed + 1 })
+        .eq('user_id', user.id);
+      if (upErr) return jsonError('Unable to update usage. Please retry.', 500);
+    }
+  }
 
   let SYSTEM_PROMPT = '';
   let USER_MESSAGE = '';

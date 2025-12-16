@@ -9,11 +9,13 @@ import {
   Copy, Check, Lock, 
   MessageCircle, ArrowLeft,
   History, Volume2, Lightbulb, Zap, Smile, ChevronRight,
-  Sparkles, ShieldCheck, Timer, BadgeCheck
+  Sparkles, ShieldCheck, Timer, BadgeCheck, Crown
 } from 'lucide-react';
 import OnboardingScreen from './_components/OnboardingScreen';
 import ManifestoContent from './_components/ManifestoContent';
 import AuthPanel from './_components/AuthPanel';
+import { getSupabase } from './_utils/supabaseClient';
+import { PLANS, type PlanId } from './_utils/plans';
 
 // --- TYPES ---
 type HistoryItem = {
@@ -28,7 +30,9 @@ type HistoryItem = {
 
 // --- CONFIGURATION ---
 const FREE_LIMIT = 5; 
-const STRIPE_LINK = "https://buy.stripe.com/test_14A00c1WkbQU8EO2Tv2cg00"; 
+const STRIPE_WEEKLY_LINK = process.env.NEXT_PUBLIC_STRIPE_WEEKLY_LINK || '';
+const STRIPE_MONTHLY_LINK = process.env.NEXT_PUBLIC_STRIPE_MONTHLY_LINK || '';
+const STRIPE_LIFETIME_LINK = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_LINK || '';
 
 // --- DYNAMIC CONTENT MAP ---
 const strugglePlaceholders: { [key: string]: string } = {
@@ -189,6 +193,11 @@ function AppContent() {
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [toast, setToast] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [accountPlan, setAccountPlan] = useState<PlanId | null>(null);
+  const [accountJournal, setAccountJournal] = useState<boolean | null>(null);
+  const [accountScriptsRemaining, setAccountScriptsRemaining] = useState<number | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Monetization State
   const [usageCount, setUsageCount] = useState(0);
@@ -234,6 +243,62 @@ function AppContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    const sb = getSupabase();
+    if (!sb) return;
+
+    let mounted = true;
+
+    sb.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setAuthToken(data.session?.access_token ?? null);
+    });
+
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+      setAuthToken(session?.access_token ?? null);
+    });
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
+
+  const refreshEntitlements = async (token: string) => {
+    try {
+      const res = await fetch('/api/entitlements', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const planId = (data?.plan ?? null) as PlanId | null;
+      const ent = planId ? PLANS[planId] : null;
+      setAccountPlan(planId);
+      setAccountJournal(ent?.journal ?? null);
+
+      if (ent?.scriptsIncluded === 'unlimited') {
+        setAccountScriptsRemaining(null);
+      } else if (ent?.scriptsIncluded && data?.usage?.scriptsUsed != null) {
+        const remaining = Math.max(0, ent.scriptsIncluded - Number(data.usage.scriptsUsed));
+        setAccountScriptsRemaining(remaining);
+      } else {
+        setAccountScriptsRemaining(null);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (!authToken) {
+      setAccountPlan(null);
+      setAccountJournal(null);
+      setAccountScriptsRemaining(null);
+      return;
+    }
+    refreshEntitlements(authToken);
+  }, [authToken]);
+
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3200);
     return () => clearTimeout(t);
@@ -259,6 +324,7 @@ function AppContent() {
         const data = await response.clone().json();
         if (data?.error) setGenerateError(String(data.error));
         else setGenerateError('Something went wrong. Please try again.');
+        if (response.status === 402) setShowUpgrade(true);
       } catch {
         setGenerateError('Something went wrong. Please try again.');
       }
@@ -307,10 +373,16 @@ function AppContent() {
     setGenerateError(null);
     
     if (activeTab === 'coparent') {
-      complete('', { body: { message: coparentText, mode: 'coparent' } });
+      complete('', {
+        body: { message: coparentText, mode: 'coparent', authToken },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      });
     } else {
       const promptText = `Child: ${gender}, Group: ${ageGroup}, Struggle: ${struggle}. Profile: ${profile}. Tone: ${tone}. Situation: ${situationText}`;
-      complete('', { body: { message: promptText, childAge: ageGroup, gender, struggle, profile, tone, mode: 'script' } });
+      complete('', {
+        body: { message: promptText, childAge: ageGroup, gender, struggle, profile, tone, mode: 'script', authToken },
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+      });
     }
   };
 
@@ -450,9 +522,22 @@ function AppContent() {
               <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <h1 className="text-3xl font-extrabold leading-tight tracking-tight md:text-4xl">Design the words that calm your home.</h1>
                 <div className="flex flex-wrap items-center justify-start gap-3 text-sm text-white/70">
-                  <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur ${isPro ? 'border-teal-400/40 bg-teal-500/10 text-teal-100' : 'border-white/15 bg-white/5 text-white/70'}`}>
-                    <BadgeCheck className="h-4 w-4" />
-                    {isPro ? 'Lifetime access' : `${Math.max(0, FREE_LIMIT - usageCount)} free left`}
+                  <span
+                    className={[
+                      'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur',
+                      accountPlan
+                        ? 'border-teal-400/40 bg-teal-500/10 text-teal-100'
+                        : isPro
+                          ? 'border-teal-400/40 bg-teal-500/10 text-teal-100'
+                          : 'border-white/15 bg-white/5 text-white/70',
+                    ].join(' ')}
+                  >
+                    {accountPlan === 'lifetime' ? <Crown className="h-4 w-4" /> : <BadgeCheck className="h-4 w-4" />}
+                    {accountPlan
+                      ? `${accountPlan.toUpperCase()}${accountScriptsRemaining != null ? ` • ${accountScriptsRemaining} left` : ''}`
+                      : isPro
+                        ? 'Lifetime access'
+                        : `${Math.max(0, FREE_LIMIT - usageCount)} free left`}
                   </span>
                   {heroStats.slice(0, 2).map((stat) => (
                     <div key={stat.label} className="hidden sm:block">
@@ -797,7 +882,24 @@ function AppContent() {
               </div>
             </header>
 
-            {historyList.length === 0 ? (
+            {accountJournal === false && (
+              <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-6 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Journal locked</p>
+                <h2 className="mt-3 text-xl font-bold">Upgrade to unlock your journal</h2>
+                <p className="mt-2 text-sm text-white/70">
+                  Weekly includes 10 scripts but no journal. Monthly and Lifetime include journaling + calendar view.
+                </p>
+                <button
+                  onClick={() => setShowUpgrade(true)}
+                  className="mt-5 w-full rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-4 text-center text-base font-semibold text-white shadow-lg transition hover:from-teal-500 hover:to-emerald-400"
+                >
+                  View plans
+                </button>
+              </div>
+            )}
+
+            {accountJournal !== false && (
+            historyList.length === 0 ? (
               <div className="text-center text-white/60 py-12 rounded-3xl border border-white/10 bg-white/5 backdrop-blur">
                 <p className="text-base font-semibold text-white">No entries yet</p>
                 <p className="mt-2 text-sm text-white/60">Generate a script and it will show up here.</p>
@@ -1028,7 +1130,17 @@ function AppContent() {
             <HomeIcon className="w-6 h-6" />
             <span className="text-[10px] font-bold">Create</span>
           </button>
-          <button onClick={() => setActiveTab('journal')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'}`}>
+          <button
+            onClick={() => {
+              if (accountJournal === false) {
+                setShowUpgrade(true);
+                setToast('Journal is included in Monthly or Lifetime.');
+                return;
+              }
+              setActiveTab('journal');
+            }}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'} ${accountJournal === false ? 'opacity-60' : ''}`}
+          >
             <History className="w-6 h-6" />
             <span className="text-[10px] font-bold">Journal</span>
           </button>
@@ -1043,50 +1155,88 @@ function AppContent() {
         </div>
       </div>
 
-      {/* PAYWALL ALERT (Global) */}
-      {!isPro && usageCount >= FREE_LIMIT && (
+      {/* PAYWALL / UPGRADE (Global) */}
+      {(showUpgrade || (!isPro && usageCount >= FREE_LIMIT)) && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="w-full max-w-md overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-b from-white to-slate-50 shadow-[0_40px_140px_rgba(0,0,0,0.55)] animate-in zoom-in">
             <div className="bg-gradient-to-r from-teal-600 to-emerald-500 px-7 py-6 text-white">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/80">Upgrade</p>
-                  <h2 className="mt-2 text-2xl font-extrabold">Lifetime access</h2>
-                  <p className="mt-1 text-white/85">One payment. Calm tools forever.</p>
+                  <h2 className="mt-2 text-2xl font-extrabold">Choose your plan</h2>
+                  <p className="mt-1 text-white/85">Weekly, monthly, or lifetime—unlock more scripts.</p>
                 </div>
-                <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
-                  <Lock className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowUpgrade(false)}
+                    className="rounded-2xl bg-white/15 px-3 py-2 text-sm font-semibold text-white/90 hover:bg-white/20"
+                  >
+                    Close
+                  </button>
+                  <div className="rounded-2xl bg-white/15 p-3 backdrop-blur">
+                    <Lock className="w-6 h-6 text-white" />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-5 flex items-baseline justify-between rounded-2xl border border-white/15 bg-white/10 px-4 py-3">
-                <p className="text-3xl font-extrabold">$9.99</p>
-                <p className="text-sm text-white/80">one-time • no subscription</p>
               </div>
             </div>
 
-            <div className="px-7 py-6">
-              <p className="text-sm font-semibold text-slate-900">Everything included</p>
-              <ul className="mt-3 space-y-3 text-sm text-slate-700">
-                <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Unlimited scripts + co-parent rewrites</li>
-                <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Journal with calendar view</li>
-                <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Tone + neurotype tuning</li>
-              </ul>
+            <div className="px-7 py-6 space-y-3">
+              {([
+                { id: 'weekly', link: STRIPE_WEEKLY_LINK, note: '10 scripts • no journal' },
+                { id: 'monthly', link: STRIPE_MONTHLY_LINK, note: '25 scripts • journal' },
+                { id: 'lifetime', link: STRIPE_LIFETIME_LINK, note: 'Unlimited • all features' },
+              ] as Array<{ id: PlanId; link: string; note: string }>).map((p) => {
+                const plan = PLANS[p.id];
+                const featured = p.id === 'lifetime';
+                const disabled = !p.link;
+                return (
+                  <a
+                    key={p.id}
+                    href={disabled ? undefined : p.link}
+                    aria-disabled={disabled}
+                    className={[
+                      'block rounded-2xl border p-4 transition',
+                      featured
+                        ? 'border-teal-500/40 bg-teal-50 hover:bg-teal-100/40'
+                        : 'border-slate-200 bg-white hover:bg-slate-50',
+                      disabled ? 'opacity-60 pointer-events-none' : '',
+                    ].join(' ')}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold text-slate-900 capitalize">{plan.plan}</p>
+                        <p className="text-xs text-slate-600">{p.note}</p>
+                      </div>
+                      <p className="text-sm font-extrabold text-slate-900">{plan.priceLabel}</p>
+                    </div>
+                  </a>
+                );
+              })}
 
-              <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-900">Why it works</p>
-                <p className="mt-2 text-sm text-slate-600">
-                  These scripts are designed to validate feelings, set firm boundaries, and lower escalation in the moment.
-                </p>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-900">Included</p>
+                <ul className="mt-3 space-y-2 text-sm text-slate-700">
+                  <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Script creator tuned to your child + tone</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Co-parent message rewrites</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Journal + calendar (monthly/lifetime)</li>
+                </ul>
               </div>
 
-              <a
-                href={STRIPE_LINK}
-                className="mt-6 block w-full rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-4 text-center text-base font-semibold text-white shadow-lg transition hover:from-teal-500 hover:to-emerald-400"
-              >
-                Unlock lifetime access
-              </a>
-              <p className="mt-3 text-center text-xs text-slate-500">
-                Secure checkout • Instant unlock
+              {authToken ? (
+                <button
+                  onClick={() => refreshEntitlements(authToken)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                >
+                  I already upgraded — refresh access
+                </button>
+              ) : (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  Sign in first so we can attach your plan to your account.
+                </div>
+              )}
+
+              <p className="text-center text-xs text-slate-500">
+                Configure `NEXT_PUBLIC_STRIPE_WEEKLY_LINK`, `NEXT_PUBLIC_STRIPE_MONTHLY_LINK`, `NEXT_PUBLIC_STRIPE_LIFETIME_LINK`.
               </p>
             </div>
           </div>
