@@ -195,7 +195,6 @@ function AppContent() {
   const [toast, setToast] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [accountPlan, setAccountPlan] = useState<PlanId | null>(null);
-  const [accountJournal, setAccountJournal] = useState<boolean | null>(null);
   const [accountScriptsRemaining, setAccountScriptsRemaining] = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -273,7 +272,6 @@ function AppContent() {
       const planId = (data?.plan ?? null) as PlanId | null;
       const ent = planId ? PLANS[planId] : null;
       setAccountPlan(planId);
-      setAccountJournal(ent?.journal ?? null);
 
       if (ent?.scriptsIncluded === 'unlimited') {
         setAccountScriptsRemaining(null);
@@ -289,13 +287,15 @@ function AppContent() {
   };
 
   useEffect(() => {
-    if (!authToken) {
-      setAccountPlan(null);
-      setAccountJournal(null);
-      setAccountScriptsRemaining(null);
-      return;
-    }
-    refreshEntitlements(authToken);
+    const t = setTimeout(() => {
+      if (!authToken) {
+        setAccountPlan(null);
+        setAccountScriptsRemaining(null);
+        return;
+      }
+      refreshEntitlements(authToken);
+    }, 0);
+    return () => clearTimeout(t);
   }, [authToken]);
 
   useEffect(() => {
@@ -351,7 +351,7 @@ function AppContent() {
       setHistoryList(updatedHistory);
       localStorage.setItem('sturdy-history', JSON.stringify(updatedHistory));
 
-      if (!isPro) {
+      if (!isPro && !accountPlan) {
         const newCount = usageCount + 1;
         setUsageCount(newCount);
         localStorage.setItem('sturdy-usage', newCount.toString());
@@ -368,7 +368,7 @@ function AppContent() {
   const cooldownSecondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - nowMs) / 1000)) : 0;
 
   const handleGenerate = () => {
-    if (!isPro && usageCount >= FREE_LIMIT) return;
+    if (!accountPlan && !isPro && usageCount >= FREE_LIMIT) return;
     if (cooldownSecondsLeft > 0) return;
     setGenerateError(null);
     
@@ -882,24 +882,22 @@ function AppContent() {
               </div>
             </header>
 
-            {accountJournal === false && (
-              <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-6 text-white">
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Journal locked</p>
-                <h2 className="mt-3 text-xl font-bold">Upgrade to unlock your journal</h2>
+            {accountPlan === 'weekly' && accountScriptsRemaining === 0 && (
+              <div className="mb-4 rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/60">Weekly plan</p>
                 <p className="mt-2 text-sm text-white/70">
-                  Weekly includes 10 scripts but no journal. Monthly and Lifetime include journaling + calendar view.
+                  You’ve used all 10 scripts this week. Your journal stays available in view-only mode.
                 </p>
                 <button
                   onClick={() => setShowUpgrade(true)}
-                  className="mt-5 w-full rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-4 text-center text-base font-semibold text-white shadow-lg transition hover:from-teal-500 hover:to-emerald-400"
+                  className="mt-4 w-full rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 px-5 py-3 text-center text-sm font-semibold text-white shadow-lg transition hover:from-teal-500 hover:to-emerald-400"
                 >
-                  View plans
+                  Upgrade for more scripts
                 </button>
               </div>
             )}
 
-            {accountJournal !== false && (
-            historyList.length === 0 ? (
+            {historyList.length === 0 ? (
               <div className="text-center text-white/60 py-12 rounded-3xl border border-white/10 bg-white/5 backdrop-blur">
                 <p className="text-base font-semibold text-white">No entries yet</p>
                 <p className="mt-2 text-sm text-white/60">Generate a script and it will show up here.</p>
@@ -1131,15 +1129,8 @@ function AppContent() {
             <span className="text-[10px] font-bold">Create</span>
           </button>
           <button
-            onClick={() => {
-              if (accountJournal === false) {
-                setShowUpgrade(true);
-                setToast('Journal is included in Monthly or Lifetime.');
-                return;
-              }
-              setActiveTab('journal');
-            }}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'} ${accountJournal === false ? 'opacity-60' : ''}`}
+            onClick={() => setActiveTab('journal')}
+            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'}`}
           >
             <History className="w-6 h-6" />
             <span className="text-[10px] font-bold">Journal</span>
@@ -1182,8 +1173,8 @@ function AppContent() {
 
             <div className="px-7 py-6 space-y-3">
               {([
-                { id: 'weekly', link: STRIPE_WEEKLY_LINK, note: '10 scripts • no journal' },
-                { id: 'monthly', link: STRIPE_MONTHLY_LINK, note: '25 scripts • journal' },
+                { id: 'weekly', link: STRIPE_WEEKLY_LINK, note: '10 scripts • journal (view-only)' },
+                { id: 'monthly', link: STRIPE_MONTHLY_LINK, note: '25 scripts • full journal' },
                 { id: 'lifetime', link: STRIPE_LIFETIME_LINK, note: 'Unlimited • all features' },
               ] as Array<{ id: PlanId; link: string; note: string }>).map((p) => {
                 const plan = PLANS[p.id];
@@ -1218,7 +1209,7 @@ function AppContent() {
                 <ul className="mt-3 space-y-2 text-sm text-slate-700">
                   <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Script creator tuned to your child + tone</li>
                   <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Co-parent message rewrites</li>
-                  <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Journal + calendar (monthly/lifetime)</li>
+                  <li className="flex gap-2"><Check className="mt-0.5 h-5 w-5 text-teal-600" /> Journal + calendar (weekly view-only)</li>
                 </ul>
               </div>
 

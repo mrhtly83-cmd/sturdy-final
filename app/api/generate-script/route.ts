@@ -159,36 +159,40 @@ export async function POST(req: Request) {
 
     if (entErr) return jsonError(entErr.message, 500);
     const planId = (ent?.plan as PlanId | undefined) ?? null;
-    if (!planId) return jsonError('No active plan. Please upgrade to continue.', 402);
+    // If user has no entitlement record yet, fall back to client-side free trial.
+    // Once entitlements are provisioned via Stripe webhook, limits are enforced here.
+    if (!planId) {
+      // continue without plan enforcement
+    } else {
+      const plan = PLANS[planId];
+      if (!plan) return jsonError('Invalid plan. Please contact support.', 500);
 
-    const plan = PLANS[planId];
-    if (!plan) return jsonError('Invalid plan. Please contact support.', 500);
+      if (plan.scriptsIncluded !== 'unlimited') {
+        const periodStart = ent?.period_start ? new Date(ent.period_start) : null;
+        const periodEnd = ent?.period_end ? new Date(ent.period_end) : null;
+        const scriptsUsed = Number(ent?.scripts_used ?? 0);
 
-    if (plan.scriptsIncluded !== 'unlimited') {
-      const periodStart = ent?.period_start ? new Date(ent.period_start) : null;
-      const periodEnd = ent?.period_end ? new Date(ent.period_end) : null;
-      const scriptsUsed = Number(ent?.scripts_used ?? 0);
+        const inPeriod =
+          periodStart && periodEnd
+            ? now >= periodStart && now <= periodEnd
+            : false;
 
-      const inPeriod =
-        periodStart && periodEnd
-          ? now >= periodStart && now <= periodEnd
-          : false;
+        // If not in a valid period, require entitlements refresh via webhook/admin.
+        if (!inPeriod) {
+          return jsonError('Your plan period needs refresh. Please retry in a moment.', 409);
+        }
 
-      // If not in a valid period, require entitlements refresh via webhook/admin.
-      if (!inPeriod) {
-        return jsonError('Your plan period needs refresh. Please retry in a moment.', 409);
+        if (scriptsUsed >= plan.scriptsIncluded) {
+          return jsonError('You’ve reached your script limit for this period.', 402);
+        }
+
+        // Reserve one usage immediately to prevent parallel abuse.
+        const { error: upErr } = await admin
+          .from('entitlements')
+          .update({ scripts_used: scriptsUsed + 1 })
+          .eq('user_id', user.id);
+        if (upErr) return jsonError('Unable to update usage. Please retry.', 500);
       }
-
-      if (scriptsUsed >= plan.scriptsIncluded) {
-        return jsonError('You’ve reached your script limit for this period.', 402);
-      }
-
-      // Reserve one usage immediately to prevent parallel abuse.
-      const { error: upErr } = await admin
-        .from('entitlements')
-        .update({ scripts_used: scriptsUsed + 1 })
-        .eq('user_id', user.id);
-      if (upErr) return jsonError('Unable to update usage. Please retry.', 500);
     }
   }
 

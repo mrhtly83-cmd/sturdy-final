@@ -11,7 +11,7 @@ export type Entitlements = {
 export const PLANS: Record<PlanId, Entitlements> = {
   weekly: {
     plan: 'weekly',
-    journal: false,
+    journal: true,
     scriptsIncluded: 10,
     period: 'week',
     priceLabel: '$4.99 / week',
@@ -36,4 +36,3 @@ export const DEFAULT_FREE = {
   journal: true,
   scriptsIncluded: 5,
 };
-
