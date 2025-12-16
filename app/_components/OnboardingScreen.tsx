@@ -34,10 +34,13 @@ export default function OnboardingScreen({
           </p>
           <div className="opacity-0 mx-auto mt-6 inline-flex flex-wrap items-center justify-center gap-2 animate-[sturdyPop_1400ms_ease-out_forwards] [animation-delay:560ms]">
             <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 backdrop-blur">
-              Lifetime access
+              Plans from $4.99/week
+            </span>
+            <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 backdrop-blur">
+              Monthly $9.99
             </span>
             <span className="rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-2 text-xs font-semibold text-teal-100 backdrop-blur">
-              $9.99 one-time
+              Lifetime $49.99
             </span>
             <span className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/70 backdrop-blur">
               Cancel-proof. No subscription.
@@ -86,7 +89,7 @@ export default function OnboardingScreen({
                 <Check className="h-4 w-4 text-teal-200" /> Co-parent rewrites
               </span>
               <span className="inline-flex items-center gap-2">
-                <Check className="h-4 w-4 text-teal-200" /> Unlimited lifetime access
+                <Check className="h-4 w-4 text-teal-200" /> Weekly, monthly, or lifetime
               </span>
             </div>
           </div>
