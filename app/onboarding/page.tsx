@@ -43,7 +43,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white sturdy-grain">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.22),transparent_45%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black/90" />
@@ -169,4 +169,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-

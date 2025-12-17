@@ -437,7 +437,7 @@ function AppContent() {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black">
         <video autoPlay loop muted playsInline className="absolute inset-0 h-full w-full object-cover opacity-70">
-          <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
+          <source src="/background.mp4.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
 
@@ -478,7 +478,7 @@ function AppContent() {
     return (
       <div className="relative z-10 flex min-h-screen flex-col justify-center font-sans">
         <video autoPlay loop muted playsInline className="fixed inset-0 -z-10 h-full w-full object-cover">
-          <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
+          <source src="/background.mp4.mp4" type="video/mp4" />
         </video>
         <div className="fixed inset-0 -z-10 bg-gradient-to-br from-black via-black/80 to-teal-900/40" />
 
@@ -509,7 +509,7 @@ function AppContent() {
 
   // --- RENDER: 3. THE MAIN APP ---
   return (
-    <div className="relative z-10 flex flex-col min-h-screen font-sans pb-24 animate-in fade-in duration-500 sturdy-grain">
+    <div className="relative z-10 flex min-h-screen flex-col font-sans pb-24 animate-in fade-in duration-500 sturdy-grain">
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
           <div className="rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-sm text-white shadow-2xl backdrop-blur-xl">
@@ -1243,7 +1243,7 @@ function AppContent() {
 
       {/* BACKGROUNDS */}
       <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-40">
-        <source src="https://cdn.coverr.co/videos/coverr-a-mother-and-her-child-touching-hands-6625/1080p.mp4" type="video/mp4" />
+        <source src="/background.mp4.mp4" type="video/mp4" />
       </video>
       <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />
     </div>
@@ -1252,7 +1252,7 @@ function AppContent() {
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen w-full font-sans text-white bg-black">
+    <div className="relative min-h-screen w-full font-sans text-white bg-black sturdy-grain">
       <main id="main">
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
           <AppContent />

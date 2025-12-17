@@ -75,7 +75,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white sturdy-grain">
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.22),transparent_45%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black/90" />
@@ -94,7 +94,7 @@ export default function LandingPage() {
       >
         <header className="flex flex-col items-center pt-6">
           <div className="grid h-24 w-24 place-items-center rounded-3xl bg-white/5 ring-1 ring-white/10 backdrop-blur">
-            <Image src="/icon.png" alt="Study Parent logo" width={96} height={96} priority className="h-20 w-20" />
+            <Image src="/icon.png" alt="Sturdy Parent logo" width={96} height={96} priority className="h-20 w-20" />
           </div>
         </header>
 
@@ -141,9 +141,18 @@ export default function LandingPage() {
             <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-white/8 to-white/3 p-6 shadow-2xl backdrop-blur">
               <div className="pointer-events-none absolute -top-24 right-0 h-64 w-64 rounded-full bg-teal-500/15 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-24 left-0 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
+              <div className="pointer-events-none absolute inset-0 opacity-25">
+                <Image
+                  src="/assets/family.svg"
+                  alt=""
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
 
               <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/55">Example</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/55">Happy-home preview</p>
                 <p className="mt-3 text-lg font-semibold text-white">“I hear how big this feels.”</p>
                 <p className="mt-2 text-sm leading-relaxed text-white/70">
                   “I’m right here. Let’s take one breath together, then we’ll make a plan.”
@@ -206,4 +215,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

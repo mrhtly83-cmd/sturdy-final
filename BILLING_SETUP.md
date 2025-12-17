@@ -1,7 +1,7 @@
 # Billing setup (Supabase + Stripe Payment Links)
 
 This app supports three plans:
-- Weekly: `$4.99 / week` — 10 scripts, no journal
+- Weekly: `$4.99 / week` — 10 scripts + journal (view-only after cap)
 - Monthly: `$9.99 / month` — 25 scripts + journal
 - Lifetime: `$49.99 lifetime` — unlimited + all features
 
@@ -68,4 +68,3 @@ In Stripe → Developers → Webhooks:
 
 Important:
 - Users should sign in before purchasing so their Stripe checkout email matches their Supabase account email.
-
