@@ -162,18 +162,9 @@ const getValueFromTone = (tone: string): number => {
 
 function AppContent() {
   // --- APP FLOW STATE ---
-  const [showSplash, setShowSplash] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const sp = new URLSearchParams(window.location.search);
-    if (sp.get('from') === 'onboarding') return false;
-    return localStorage.getItem('sturdy-onboarded') !== 'true';
-  });
-  const [showWelcome, setShowWelcome] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const sp = new URLSearchParams(window.location.search);
-    if (sp.get('from') === 'onboarding') return false;
-    return localStorage.getItem('sturdy-onboarded') !== 'true';
-  });
+  // `/` now owns the landing + onboarding flow; `/create` should always open directly.
+  const [showSplash, setShowSplash] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // --- NAVIGATION STATE ---
   const [activeTab, setActiveTab] = useState<'home' | 'journal' | 'coparent' | 'guide'>('home');
