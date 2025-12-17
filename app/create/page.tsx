@@ -198,6 +198,7 @@ function AppContent() {
   const [accountPlan, setAccountPlan] = useState<PlanId | null>(null);
   const [accountScriptsRemaining, setAccountScriptsRemaining] = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [showUpgradeAuth, setShowUpgradeAuth] = useState(false);
 
   // Monetization State
   const [usageCount, setUsageCount] = useState(0);
@@ -1228,14 +1229,36 @@ function AppContent() {
                   I already upgraded — refresh access
                 </button>
               ) : (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  Sign in first so we can attach your plan to your account.
+                <div className="space-y-3">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <p className="font-semibold">Sign in first</p>
+                    <p className="mt-1 text-amber-900/80">
+                      We attach purchases to your account so access stays synced across devices.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowUpgradeAuth((v) => !v)}
+                    className="w-full rounded-2xl bg-teal-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-400/50"
+                  >
+                    {showUpgradeAuth ? 'Hide sign-in options' : 'Sign in to continue'}
+                  </button>
+
+                  {showUpgradeAuth ? (
+                    <div className="rounded-2xl bg-slate-900 p-4">
+                      <AuthPanel variant="inline" />
+                    </div>
+                  ) : null}
                 </div>
               )}
 
-              <p className="text-center text-xs text-slate-500">
-                Configure `NEXT_PUBLIC_STRIPE_WEEKLY_LINK`, `NEXT_PUBLIC_STRIPE_MONTHLY_LINK`, `NEXT_PUBLIC_STRIPE_LIFETIME_LINK`.
-              </p>
+              {process.env.NODE_ENV !== 'production' &&
+              (!STRIPE_WEEKLY_LINK || !STRIPE_MONTHLY_LINK || !STRIPE_LIFETIME_LINK) ? (
+                <p className="text-center text-xs text-slate-500">
+                  Missing Stripe env vars: `NEXT_PUBLIC_STRIPE_WEEKLY_LINK`, `NEXT_PUBLIC_STRIPE_MONTHLY_LINK`, `NEXT_PUBLIC_STRIPE_LIFETIME_LINK`.
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
