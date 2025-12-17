@@ -61,6 +61,7 @@ export default function LandingPage() {
             playsInline
             className="absolute inset-0 h-full w-full object-cover opacity-60"
           >
+            <source src="/assets/family-sunset.mp4" type="video/mp4" />
             <source src="/background.mp4.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-black/55" />

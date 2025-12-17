@@ -1308,6 +1308,7 @@ function AppContent() {
 
       {/* BACKGROUNDS */}
       <video autoPlay loop muted playsInline className="fixed top-0 left-0 min-w-full min-h-full object-cover -z-10 opacity-40">
+        <source src="/assets/family-sunset.mp4" type="video/mp4" />
         <source src="/background.mp4.mp4" type="video/mp4" />
       </video>
       <div className="fixed top-0 left-0 w-full h-full bg-stone-900/40 mix-blend-multiply -z-10" />

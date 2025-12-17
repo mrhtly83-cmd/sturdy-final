@@ -4,6 +4,7 @@ export default function ManifestoPage() {
   return (
     <div className="relative min-h-screen w-full font-sans text-white bg-black sturdy-grain">
       <video autoPlay loop muted playsInline className="fixed inset-0 -z-10 h-full w-full object-cover opacity-40">
+        <source src="/assets/family-sunset.mp4" type="video/mp4" />
         <source src="/background.mp4.mp4" type="video/mp4" />
       </video>
       <div className="fixed inset-0 -z-10 bg-stone-900/50 mix-blend-multiply" />
