@@ -154,9 +154,9 @@ export default function LandingPage() {
 
               <div className="relative">
                 <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/55">Happy-home preview</p>
-                <p className="mt-3 text-lg font-semibold text-white">"I hear how big this feels."</p>
+                <p className="mt-3 text-lg font-semibold text-white">“I hear how big this feels.”</p>
                 <p className="mt-2 text-sm leading-relaxed text-white/70">
-                  "I'm right here. Let's take one breath together, then we'll make a plan."
+                  “I’m right here. Let’s take one breath together, then we’ll make a plan.”
                 </p>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
