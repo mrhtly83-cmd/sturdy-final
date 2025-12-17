@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import PrimaryButton from './_components/PrimaryButton';
 import TestimonialRotator from './_components/TestimonialRotator';
+import Header from './_components/Header_Integrated';
+import Footer from './_components/Footer_Integrated';
 
 type Benefit = {
   title: string;
@@ -76,6 +78,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white sturdy-grain">
+      {/* Background effects */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.22),transparent_45%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black via-black to-black/90" />
@@ -83,21 +86,19 @@ export default function LandingPage() {
         <div className="absolute -right-24 bottom-24 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
       </div>
 
+      {/* Header */}
+      <Header />
+
       <main
         id="main"
         className={[
           'mx-auto w-full max-w-6xl px-6',
-          'pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]',
+          'pt-[max(6rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]',
           'transition-all duration-300 ease-out',
           leavingTo ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0',
         ].join(' ')}
       >
-        <header className="flex flex-col items-center pt-6">
-          <div className="grid h-24 w-24 place-items-center rounded-3xl bg-white/5 ring-1 ring-white/10 backdrop-blur">
-            <Image src="/icon.png" alt="Sturdy Parent logo" width={96} height={96} priority className="h-20 w-20" />
-          </div>
-        </header>
-
+        {/* Hero Section */}
         <section className="mt-8 grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
             <h1 className="opacity-0 animate-[calmFadeUp_900ms_cubic-bezier(0.16,1,0.3,1)_forwards] text-balance text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">
@@ -153,9 +154,9 @@ export default function LandingPage() {
 
               <div className="relative">
                 <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/55">Happy-home preview</p>
-                <p className="mt-3 text-lg font-semibold text-white">“I hear how big this feels.”</p>
+                <p className="mt-3 text-lg font-semibold text-white">"I hear how big this feels."</p>
                 <p className="mt-2 text-sm leading-relaxed text-white/70">
-                  “I’m right here. Let’s take one breath together, then we’ll make a plan.”
+                  "I'm right here. Let's take one breath together, then we'll make a plan."
                 </p>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
@@ -178,6 +179,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Benefits Section */}
         <section className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {benefits.map(({ title, description, Icon }, index) => (
             <div
@@ -202,6 +204,7 @@ export default function LandingPage() {
           ))}
         </section>
 
+        {/* Testimonials & Info Section */}
         <section className="mt-8 grid gap-4 lg:grid-cols-2">
           <TestimonialRotator testimonials={testimonials} />
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
@@ -212,6 +215,9 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
