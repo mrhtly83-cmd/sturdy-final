@@ -8,14 +8,13 @@ export default function ManifestoPage() {
       </video>
       <div className="fixed inset-0 -z-10 bg-stone-900/50 mix-blend-multiply" />
 
-      <div className="mx-auto w-full max-w-md px-6 pb-16 pt-10">
+      <main id="main" className="mx-auto w-full max-w-md px-6 pb-16 pt-10">
         <header className="mb-6">
           <h1 className="text-3xl font-bold text-white">The Manifesto</h1>
           <p className="mt-2 text-sm text-white/70">Small principles that create calmer moments.</p>
         </header>
         <ManifestoContent />
-      </div>
+      </main>
     </div>
   );
 }
-
