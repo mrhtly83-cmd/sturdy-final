@@ -606,7 +606,7 @@ function AppContent() {
                       style={{ transform: `translateX(-${(homeStep - 1) * 100}%)` }}
                     >
                     {/* STEP 1: KID DETAILS */}
-                    <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
+                    <div className="flex w-full max-w-full flex-none flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">1. Who is the child?</h2>
                       <div className="relative">
                         <select
@@ -678,7 +678,7 @@ function AppContent() {
                     </div>
 
                     {/* STEP 2: STRUGGLE */}
-                    <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
+                    <div className="flex w-full max-w-full flex-none flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">2. What is the core struggle?</h2>
                       <div className="relative">
                         <select
@@ -725,7 +725,7 @@ function AppContent() {
                     </div>
 
                     {/* STEP 3: PROFILE & TONE */}
-                    <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
+                    <div className="flex w-full max-w-full flex-none flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">3. Fine-tune the advice</h2>
 
                       <div className="space-y-2">
@@ -790,7 +790,7 @@ function AppContent() {
                     </div>
 
                     {/* STEP 4: SITUATION INPUT & GENERATE */}
-                    <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
+                    <div className="flex w-full max-w-full flex-none flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">4. Describe the moment</h2>
                       <textarea
                         value={situationText}
