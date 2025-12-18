@@ -159,6 +159,67 @@ const getValueFromTone = (tone: string): number => {
     return tone === 'Gentle' ? 1 : tone === 'Firm' ? 3 : 2;
 };
 
+function SuccessReport({
+  anchor,
+  streak,
+  onClose,
+}: {
+  anchor: string;
+  streak: number;
+  onClose: () => void;
+}) {
+  const capped = Math.max(0, Math.min(28, streak));
+
+  return (
+    <div className="max-w-md mx-auto space-y-6 animate-in fade-in zoom-in duration-500 mt-6">
+      <div className="text-center space-y-3">
+        <div className="mx-auto w-20 h-20 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-3xl flex items-center justify-center shadow-[0_20px_50px_rgba(20,184,166,0.3)]">
+          <BadgeCheck className="w-10 h-10 text-white" />
+        </div>
+        <h2 className="text-2xl font-black text-white uppercase tracking-wider">Foundation Sealed</h2>
+        <p className="text-teal-100/70 text-sm font-medium">You stayed sturdy. Take a deep breath.</p>
+      </div>
+
+      <div className="bg-white rounded-[32px] border border-white/10 p-6 shadow-2xl">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-4">
+          Leadership Report
+        </h3>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <span className="text-sm font-bold text-slate-600">Active Anchor</span>
+            <span className="text-sm font-black text-teal-600 uppercase">{anchor}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-bold text-slate-600">Current Streak</span>
+            <span className="text-sm font-black text-slate-900">{capped} Days</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-black/20 backdrop-blur-md rounded-[32px] border border-white/10 p-6">
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-3 text-center">
+          Stability Progress
+        </p>
+        <div className="grid grid-cols-7 gap-1.5">
+          {[...Array(28)].map((_, i) => (
+            <div
+              key={i}
+              className={`h-3 rounded-sm ${i < capped ? 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]' : 'bg-white/5'}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={onClose}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-4 text-base font-black text-black shadow-xl transition duration-200 ease-out hover:translate-y-[-1px] active:scale-[0.97]"
+      >
+        View My Script <ChevronRight className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}
+
 
 function AppContent() {
   // --- APP FLOW STATE ---
@@ -199,6 +260,7 @@ function AppContent() {
   const [accountScriptsRemaining, setAccountScriptsRemaining] = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showUpgradeAuth, setShowUpgradeAuth] = useState(false);
+  const [showSuccessReport, setShowSuccessReport] = useState(false);
   const [selectFlashKey, setSelectFlashKey] = useState<string | null>(null);
 
   // Monetization State
@@ -360,6 +422,10 @@ function AppContent() {
       setHistoryList(updatedHistory);
       localStorage.setItem('sturdy-history', JSON.stringify(updatedHistory));
 
+      if (type === 'script' && activeTab === 'home') {
+        setShowSuccessReport(true);
+      }
+
       if (!isPro && !accountPlan) {
         const newCount = usageCount + 1;
         setUsageCount(newCount);
@@ -378,6 +444,15 @@ function AppContent() {
   }, [cooldownUntil]);
 
   const cooldownSecondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - nowMs) / 1000)) : 0;
+
+  const closeSuccessReport = () => {
+    setShowSuccessReport(false);
+    window.setTimeout(() => {
+      document
+        .getElementById('sturdy-result-card')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  };
 
   const flashSelect = (key: string) => {
     setSelectFlashKey(key);
@@ -534,6 +609,24 @@ function AppContent() {
           </div>
         </div>
       )}
+
+      {showSuccessReport && activeTab === 'home' ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6">
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Close success report"
+            onClick={closeSuccessReport}
+          />
+          <div className="relative w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <SuccessReport
+              anchor={struggle}
+              streak={historyList.filter((item) => item.type === 'script').length}
+              onClose={closeSuccessReport}
+            />
+          </div>
+        </div>
+      ) : null}
       
       {/* CONTENT AREA */}
       <div className="flex-1 p-6 pt-4 overflow-y-auto">
@@ -872,7 +965,7 @@ function AppContent() {
 
         {/* RESULT CARD (HORIZONTAL LAYOUT) */}
         {(activeTab === 'home' || activeTab === 'coparent') && completion && (
-          <div className="max-w-md mx-auto bg-white/95 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4 overflow-hidden border border-gray-200">
+          <div id="sturdy-result-card" className="max-w-md mx-auto bg-white/95 rounded-2xl shadow-xl mt-6 animate-in fade-in slide-in-from-bottom-4 overflow-hidden border border-gray-200">
             
             {/* GRADIENT HEADER & SUMMARY */}
             <div className={`p-4 text-white font-bold flex justify-between items-start ${activeTab === 'coparent' ? 'bg-gradient-to-r from-purple-600 to-indigo-500' : 'bg-gradient-to-r from-teal-600 to-emerald-500'}`}>
