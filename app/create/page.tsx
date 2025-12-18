@@ -363,6 +363,9 @@ function AppContent() {
         const newCount = usageCount + 1;
         setUsageCount(newCount);
         localStorage.setItem('sturdy-usage', newCount.toString());
+        if (newCount === FREE_LIMIT) {
+          setToast('Free trial complete. Upgrade anytime to keep generating scripts.');
+        }
       }
     }
   });
@@ -376,7 +379,12 @@ function AppContent() {
   const cooldownSecondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - nowMs) / 1000)) : 0;
 
   const handleGenerate = () => {
-    if (!accountPlan && !isPro && usageCount >= FREE_LIMIT) return;
+    if (!accountPlan && !isPro && usageCount >= FREE_LIMIT) {
+      setShowUpgradeAuth(false);
+      setShowUpgrade(true);
+      setToast('You’ve used your free scripts. Upgrade to unlock more.');
+      return;
+    }
     if (cooldownSecondsLeft > 0) return;
     setGenerateError(null);
     
@@ -1155,7 +1163,7 @@ function AppContent() {
       </div>
 
       {/* PAYWALL / UPGRADE (Global) */}
-      {(showUpgrade || (!isPro && usageCount >= FREE_LIMIT)) && (
+      {showUpgrade && (
         <div
           className={[
             'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm',
@@ -1163,6 +1171,15 @@ function AppContent() {
             'pt-[max(0px,env(safe-area-inset-top))] pb-[max(0px,env(safe-area-inset-bottom))]',
           ].join(' ')}
         >
+          <button
+            type="button"
+            className="absolute inset-0 cursor-default"
+            aria-label="Close upgrade modal"
+            onClick={() => {
+              setShowUpgradeAuth(false);
+              setShowUpgrade(false);
+            }}
+          />
           <div
             className={[
               'w-full sm:max-w-md',
@@ -1175,6 +1192,7 @@ function AppContent() {
             role="dialog"
             aria-modal="true"
             aria-label="Choose your plan"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-gradient-to-r from-teal-600 to-emerald-500 px-6 py-5 text-white">
               <div className="flex items-start justify-between gap-3">
