@@ -7,13 +7,14 @@ import Image from 'next/image';
 import { 
   Heart, Home as HomeIcon, Users, BookOpen, 
   Copy, Check, Lock, 
-  MessageCircle, ArrowLeft, X, ChevronLeft,
+  MessageCircle, ArrowLeft, X, ChevronLeft, User,
   History, Volume2, Lightbulb, Zap, Smile, ChevronRight,
   Sparkles, ShieldCheck, Timer, BadgeCheck, Crown
 } from 'lucide-react';
 import OnboardingScreen from '../_components/OnboardingScreen';
 import ManifestoContent from '../_components/ManifestoContent';
 import AuthPanel from '../_components/AuthPanel';
+import ProfilePanel from '../_components/ProfilePanel';
 import { getSupabase } from '../_utils/supabaseClient';
 import { PLANS, type PlanId } from '../_utils/plans';
 
@@ -228,7 +229,7 @@ function AppContent() {
   const [showWelcome, setShowWelcome] = useState(false);
 
   // --- NAVIGATION STATE ---
-  const [activeTab, setActiveTab] = useState<'home' | 'journal' | 'coparent' | 'guide'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'journal' | 'coparent' | 'guide' | 'profile'>('home');
   // NEW: Multi-Step Form State
   const [homeStep, setHomeStep] = useState(1);
   const maxHomeSteps = 4; // 1: Kid details, 2: Struggle, 3: Profile/Tone, 4: Situation/Generate
@@ -1321,70 +1322,69 @@ function AppContent() {
             <ManifestoContent />
           </div>
         )}
+
+        {/* TAB 5: PROFILE/ACCOUNT */}
+        {activeTab === 'profile' && (
+          <div className="max-w-md mx-auto animate-in fade-in slide-in-from-right-4 duration-500 mt-4">
+            <ProfilePanel mode="tab" />
+          </div>
+        )}
       </div>
 
-      {/* --- BOTTOM NAVIGATION BAR --- */}
+      {/* --- BOTTOM NAVIGATION BAR (5 TABS) --- */}
       <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-white/10 pb-6 pt-3 px-6 z-40">
         <div className="flex justify-around items-center max-w-md mx-auto">
           <button
-            onClick={() => setActiveTab('home')}
-            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-teal-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-400/40`}
+            onClick={() => {
+              setActiveTab('home');
+              setShowSuccessReport(false);
+            }}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeTab === 'home' ? 'text-teal-200' : 'text-white/50'}`}
             aria-current={activeTab === 'home' ? 'page' : undefined}
           >
-            <HomeIcon className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
+            <HomeIcon className="w-6 h-6 transition-transform group-active:scale-90" />
             <span className="text-[10px] font-bold">Create</span>
-            <span
-              className={[
-                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300',
-                'transition-transform duration-150 ease-out origin-center',
-                activeTab === 'home' ? 'scale-x-100' : 'scale-x-0',
-              ].join(' ')}
-            />
+            <span className={`absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300 transition-transform ${activeTab === 'home' ? 'scale-x-100' : 'scale-x-0'}`} />
           </button>
+
           <button
             onClick={() => setActiveTab('journal')}
-            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'journal' ? 'text-teal-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-400/40`}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeTab === 'journal' ? 'text-teal-200' : 'text-white/50'}`}
             aria-current={activeTab === 'journal' ? 'page' : undefined}
           >
-            <History className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
+            <History className="w-6 h-6 transition-transform group-active:scale-90" />
             <span className="text-[10px] font-bold">Journal</span>
-            <span
-              className={[
-                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300',
-                'transition-transform duration-150 ease-out origin-center',
-                activeTab === 'journal' ? 'scale-x-100' : 'scale-x-0',
-              ].join(' ')}
-            />
+            <span className={`absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300 transition-transform ${activeTab === 'journal' ? 'scale-x-100' : 'scale-x-0'}`} />
           </button>
+
           <button
             onClick={() => setActiveTab('coparent')}
-            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'coparent' ? 'text-purple-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-400/30`}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeTab === 'coparent' ? 'text-purple-200' : 'text-white/50'}`}
             aria-current={activeTab === 'coparent' ? 'page' : undefined}
           >
-            <Users className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
+            <Users className="w-6 h-6 transition-transform group-active:scale-90" />
             <span className="text-[10px] font-bold">Co-Parent</span>
-            <span
-              className={[
-                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-purple-300',
-                'transition-transform duration-150 ease-out origin-center',
-                activeTab === 'coparent' ? 'scale-x-100' : 'scale-x-0',
-              ].join(' ')}
-            />
+            <span className={`absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-purple-300 transition-transform ${activeTab === 'coparent' ? 'scale-x-100' : 'scale-x-0'}`} />
           </button>
+
           <button
             onClick={() => setActiveTab('guide')}
-            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'guide' ? 'text-amber-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30`}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeTab === 'guide' ? 'text-amber-200' : 'text-white/50'}`}
             aria-current={activeTab === 'guide' ? 'page' : undefined}
           >
-            <BookOpen className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
+            <BookOpen className="w-6 h-6 transition-transform group-active:scale-90" />
             <span className="text-[10px] font-bold">Guide</span>
-            <span
-              className={[
-                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-amber-300',
-                'transition-transform duration-150 ease-out origin-center',
-                activeTab === 'guide' ? 'scale-x-100' : 'scale-x-0',
-              ].join(' ')}
-            />
+            <span className={`absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-amber-300 transition-transform ${activeTab === 'guide' ? 'scale-x-100' : 'scale-x-0'}`} />
+          </button>
+
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 transition-colors ${activeTab === 'profile' ? 'text-teal-200' : 'text-white/50'}`}
+            aria-current={activeTab === 'profile' ? 'page' : undefined}
+          >
+            <User className="w-6 h-6 transition-transform group-active:scale-90" />
+            <span className="text-[10px] font-bold">Account</span>
+            <span className={`absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300 transition-transform ${activeTab === 'profile' ? 'scale-x-100' : 'scale-x-0'}`} />
           </button>
         </div>
       </div>
