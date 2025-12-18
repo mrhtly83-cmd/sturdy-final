@@ -1,26 +1,34 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router'; // Adjust based on your routing library
-import { Session, createClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const supabase = createClient('your-supabase-url', 'your-supabase-anon-key');
+import { supabase } from '../supabaseClient'; // Adjust the import based on your project structure
+import { Linking } from 'expo-linking';
 
 const Layout = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session: Session | null) => {
-      if (!session) {
-        // If unauthenticated, redirect to login
-        router.push('/auth/login');
+    // Handle incoming URLs
+    const handleIncomingURL = (url: string) => {
+      // Process the URL as needed, here we just log it
+      console.log('Incoming URL:', url);
+    };
+
+    const subscription = Linking.addEventListener('url', ({ url }) => handleIncomingURL(url));
+
+    // Supabase Auth Listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        // Redirect or do something with authenticated session
+        console.log('User is logged in:', session);
       } else {
-        // If authenticated, persist session in AsyncStorage
-        await AsyncStorage.setItem('userSession', JSON.stringify(session));
+        // Handle unauthenticated state if needed
+        console.log('User is logged out');
       }
     });
 
-    // Cleanup subscription on unmount
+    // Clean up listeners on unmount
     return () => {
+      subscription.remove();
       authListener.subscription.unsubscribe();
     };
   }, [router]);

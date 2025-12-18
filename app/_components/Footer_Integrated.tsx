@@ -1,3 +1,5 @@
+// This component is deprecated. Use Footer.tsx instead.
+
 'use client';
 
 import Link from 'next/link';
@@ -125,3 +127,4 @@ export default function Footer() {
     </footer>
   );
 }
+

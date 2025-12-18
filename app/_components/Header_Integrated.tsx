@@ -1,3 +1,5 @@
+// This component is deprecated. Use Header.tsx instead.
+
 'use client';
 
 import { useState } from 'react';
@@ -78,3 +80,4 @@ export default function Header() {
     </>
   );
 }
+
