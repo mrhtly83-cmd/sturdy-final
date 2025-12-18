@@ -199,6 +199,7 @@ function AppContent() {
   const [accountScriptsRemaining, setAccountScriptsRemaining] = useState<number | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [showUpgradeAuth, setShowUpgradeAuth] = useState(false);
+  const [selectFlashKey, setSelectFlashKey] = useState<string | null>(null);
 
   // Monetization State
   const [usageCount, setUsageCount] = useState(0);
@@ -377,6 +378,13 @@ function AppContent() {
   }, [cooldownUntil]);
 
   const cooldownSecondsLeft = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - nowMs) / 1000)) : 0;
+
+  const flashSelect = (key: string) => {
+    setSelectFlashKey(key);
+    window.setTimeout(() => {
+      setSelectFlashKey((prev) => (prev === key ? null : prev));
+    }, 160);
+  };
 
   const handleGenerate = () => {
     if (!accountPlan && !isPro && usageCount >= FREE_LIMIT) {
@@ -576,7 +584,7 @@ function AppContent() {
                     </div>
                     <div className="mt-3 h-2 rounded-full bg-slate-100">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-300"
+                        className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-400 transition-all duration-500 ease-out"
                         style={{ width: `${homeProgress}%` }}
                       />
                     </div>
@@ -600,27 +608,70 @@ function AppContent() {
                     {/* STEP 1: KID DETAILS */}
                     <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">1. Who is the child?</h2>
-                      <select
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base font-medium text-slate-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
-                      >
-                        <option>Boy</option>
-                        <option>Girl</option>
-                      </select>
-                      <select
-                        value={ageGroup}
-                        onChange={(e) => setAgeGroup(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base font-medium text-slate-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
-                      >
-                        <option>Toddler (1-4)</option>
-                        <option>School Age (5-10)</option>
-                        <option>Pre-Teen (11-13)</option>
-                        <option>Teenager (14+)</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={gender}
+                          onChange={(e) => {
+                            setGender(e.target.value);
+                            flashSelect('gender');
+                          }}
+                          className={[
+                            'w-full rounded-2xl border bg-slate-50 p-4 pr-12 text-base font-medium text-slate-800 outline-none',
+                            'shadow-inner transition-[box-shadow,border-color] duration-150 ease-out',
+                            'focus:border-teal-400 focus:ring-2 focus:ring-teal-100',
+                            selectFlashKey === 'gender'
+                              ? 'border-teal-300 ring-2 ring-teal-200/60 shadow-[0_0_0_6px_rgba(20,184,166,0.12)]'
+                              : 'border-slate-200',
+                          ].join(' ')}
+                        >
+                          <option>Boy</option>
+                          <option>Girl</option>
+                        </select>
+                        <div
+                          className={[
+                            'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2',
+                            'transition-all duration-150 ease-out',
+                            selectFlashKey === 'gender' ? 'scale-110 text-teal-600 opacity-100' : 'scale-100 text-slate-400 opacity-70',
+                          ].join(' ')}
+                        >
+                          <Check className="h-5 w-5" />
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <select
+                          value={ageGroup}
+                          onChange={(e) => {
+                            setAgeGroup(e.target.value);
+                            flashSelect('ageGroup');
+                          }}
+                          className={[
+                            'w-full rounded-2xl border bg-slate-50 p-4 pr-12 text-base font-medium text-slate-800 outline-none',
+                            'shadow-inner transition-[box-shadow,border-color] duration-150 ease-out',
+                            'focus:border-teal-400 focus:ring-2 focus:ring-teal-100',
+                            selectFlashKey === 'ageGroup'
+                              ? 'border-teal-300 ring-2 ring-teal-200/60 shadow-[0_0_0_6px_rgba(20,184,166,0.12)]'
+                              : 'border-slate-200',
+                          ].join(' ')}
+                        >
+                          <option>Toddler (1-4)</option>
+                          <option>School Age (5-10)</option>
+                          <option>Pre-Teen (11-13)</option>
+                          <option>Teenager (14+)</option>
+                        </select>
+                        <div
+                          className={[
+                            'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2',
+                            'transition-all duration-150 ease-out',
+                            selectFlashKey === 'ageGroup' ? 'scale-110 text-teal-600 opacity-100' : 'scale-100 text-slate-400 opacity-70',
+                          ].join(' ')}
+                        >
+                          <Check className="h-5 w-5" />
+                        </div>
+                      </div>
                       <button
                         onClick={() => setHomeStep(2)}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition duration-200 ease-out hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 hover:shadow-xl active:scale-[0.97] active:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-200/60"
                       >
                         Continue <ChevronRight className="h-5 w-5" />
                       </button>
@@ -629,24 +680,45 @@ function AppContent() {
                     {/* STEP 2: STRUGGLE */}
                     <div className="flex min-w-full flex-shrink-0 flex-col gap-4">
                       <h2 className="text-xl font-semibold text-slate-900">2. What is the core struggle?</h2>
-                      <select
-                        value={struggle}
-                        onChange={(e) => setStruggle(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base font-medium text-slate-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
-                      >
-                        <option>Big Emotions</option>
-                        <option>Aggression</option>
-                        <option>Resistance/Defiance</option>
-                        <option>Siblings</option>
-                        <option>Screen Time</option>
-                        <option>School & Anxiety</option>
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={struggle}
+                          onChange={(e) => {
+                            setStruggle(e.target.value);
+                            flashSelect('struggle');
+                          }}
+                          className={[
+                            'w-full rounded-2xl border bg-slate-50 p-4 pr-12 text-base font-medium text-slate-800 outline-none',
+                            'shadow-inner transition-[box-shadow,border-color] duration-150 ease-out',
+                            'focus:border-teal-400 focus:ring-2 focus:ring-teal-100',
+                            selectFlashKey === 'struggle'
+                              ? 'border-teal-300 ring-2 ring-teal-200/60 shadow-[0_0_0_6px_rgba(20,184,166,0.12)]'
+                              : 'border-slate-200',
+                          ].join(' ')}
+                        >
+                          <option>Big Emotions</option>
+                          <option>Aggression</option>
+                          <option>Resistance/Defiance</option>
+                          <option>Siblings</option>
+                          <option>Screen Time</option>
+                          <option>School & Anxiety</option>
+                        </select>
+                        <div
+                          className={[
+                            'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2',
+                            'transition-all duration-150 ease-out',
+                            selectFlashKey === 'struggle' ? 'scale-110 text-teal-600 opacity-100' : 'scale-100 text-slate-400 opacity-70',
+                          ].join(' ')}
+                        >
+                          <Check className="h-5 w-5" />
+                        </div>
+                      </div>
                       <div className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4 text-sm text-teal-700">
                         Choose the behavior at the root so the script knows where to aim compassion.
                       </div>
                       <button
                         onClick={() => setHomeStep(3)}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition duration-200 ease-out hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 hover:shadow-xl active:scale-[0.97] active:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-200/60"
                       >
                         Continue <ChevronRight className="h-5 w-5" />
                       </button>
@@ -658,16 +730,37 @@ function AppContent() {
 
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-600">Neurotype (for tailored language)</label>
-                        <select
-                          value={profile}
-                          onChange={(e) => setProfile(e.target.value)}
-                          className="w-full rounded-2xl border border-teal-200 bg-teal-50/70 p-4 text-base font-medium text-teal-900 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
-                        >
-                          <option>Neurotypical</option>
-                          <option>ADHD</option>
-                          <option>Autism</option>
-                          <option>Highly Sensitive</option>
-                        </select>
+                        <div className="relative">
+                          <select
+                            value={profile}
+                            onChange={(e) => {
+                              setProfile(e.target.value);
+                              flashSelect('profile');
+                            }}
+                            className={[
+                              'w-full rounded-2xl border bg-teal-50/70 p-4 pr-12 text-base font-medium text-teal-900 outline-none',
+                              'shadow-inner transition-[box-shadow,border-color] duration-150 ease-out',
+                              'focus:border-teal-400 focus:ring-2 focus:ring-teal-100',
+                              selectFlashKey === 'profile'
+                                ? 'border-teal-300 ring-2 ring-teal-200/60 shadow-[0_0_0_6px_rgba(20,184,166,0.12)]'
+                                : 'border-teal-200',
+                            ].join(' ')}
+                          >
+                            <option>Neurotypical</option>
+                            <option>ADHD</option>
+                            <option>Autism</option>
+                            <option>Highly Sensitive</option>
+                          </select>
+                          <div
+                            className={[
+                              'pointer-events-none absolute right-4 top-1/2 -translate-y-1/2',
+                              'transition-all duration-150 ease-out',
+                              selectFlashKey === 'profile' ? 'scale-110 text-teal-700 opacity-100' : 'scale-100 text-teal-900/40 opacity-70',
+                            ].join(' ')}
+                          >
+                            <Check className="h-5 w-5" />
+                          </div>
+                        </div>
                       </div>
 
                       <div className="space-y-2 pt-1">
@@ -690,7 +783,7 @@ function AppContent() {
                       </div>
                       <button
                         onClick={() => setHomeStep(4)}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition duration-200 ease-out hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 hover:shadow-xl active:scale-[0.97] active:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-200/60"
                       >
                         Almost done <ChevronRight className="h-5 w-5" />
                       </button>
@@ -721,7 +814,7 @@ function AppContent() {
                       <button
                         disabled={isLoading || cooldownSecondsLeft > 0}
                         onClick={handleGenerate}
-                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-500 py-4 text-base font-semibold text-white shadow-lg transition duration-200 ease-out hover:translate-y-[-1px] hover:from-teal-500 hover:to-emerald-400 hover:shadow-xl active:scale-[0.97] active:shadow-2xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-200/60 disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         <Heart className="h-5 w-5 fill-white/20" />
                         {isLoading ? 'Generating Sturdy guidance...' : 'Get my script'}
@@ -1140,24 +1233,65 @@ function AppContent() {
       {/* --- BOTTOM NAVIGATION BAR --- */}
       <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-xl border-t border-white/10 pb-6 pt-3 px-6 z-40">
         <div className="flex justify-around items-center max-w-md mx-auto">
-          <button onClick={() => setActiveTab('home')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'home' ? 'text-teal-300' : 'text-white/50'}`}>
-            <HomeIcon className="w-6 h-6" />
+          <button
+            onClick={() => setActiveTab('home')}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'home' ? 'text-teal-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-400/40`}
+            aria-current={activeTab === 'home' ? 'page' : undefined}
+          >
+            <HomeIcon className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
             <span className="text-[10px] font-bold">Create</span>
+            <span
+              className={[
+                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300',
+                'transition-transform duration-150 ease-out origin-center',
+                activeTab === 'home' ? 'scale-x-100' : 'scale-x-0',
+              ].join(' ')}
+            />
           </button>
           <button
             onClick={() => setActiveTab('journal')}
-            className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'journal' ? 'text-teal-300' : 'text-white/50'}`}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'journal' ? 'text-teal-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-400/40`}
+            aria-current={activeTab === 'journal' ? 'page' : undefined}
           >
-            <History className="w-6 h-6" />
+            <History className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
             <span className="text-[10px] font-bold">Journal</span>
+            <span
+              className={[
+                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-teal-300',
+                'transition-transform duration-150 ease-out origin-center',
+                activeTab === 'journal' ? 'scale-x-100' : 'scale-x-0',
+              ].join(' ')}
+            />
           </button>
-          <button onClick={() => setActiveTab('coparent')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'coparent' ? 'text-purple-300' : 'text-white/50'}`}>
-            <Users className="w-6 h-6" />
+          <button
+            onClick={() => setActiveTab('coparent')}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'coparent' ? 'text-purple-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-400/30`}
+            aria-current={activeTab === 'coparent' ? 'page' : undefined}
+          >
+            <Users className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
             <span className="text-[10px] font-bold">Co-Parent</span>
+            <span
+              className={[
+                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-purple-300',
+                'transition-transform duration-150 ease-out origin-center',
+                activeTab === 'coparent' ? 'scale-x-100' : 'scale-x-0',
+              ].join(' ')}
+            />
           </button>
-          <button onClick={() => setActiveTab('guide')} className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${activeTab === 'guide' ? 'text-amber-300' : 'text-white/50'}`}>
-            <BookOpen className="w-6 h-6" />
+          <button
+            onClick={() => setActiveTab('guide')}
+            className={`group relative flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors ${activeTab === 'guide' ? 'text-amber-200' : 'text-white/50'} focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-400/30`}
+            aria-current={activeTab === 'guide' ? 'page' : undefined}
+          >
+            <BookOpen className="w-6 h-6 transition-transform duration-200 ease-out group-active:scale-90" />
             <span className="text-[10px] font-bold">Guide</span>
+            <span
+              className={[
+                'absolute -bottom-1 left-1/2 h-1 w-8 -translate-x-1/2 rounded-full bg-amber-300',
+                'transition-transform duration-150 ease-out origin-center',
+                activeTab === 'guide' ? 'scale-x-100' : 'scale-x-0',
+              ].join(' ')}
+            />
           </button>
         </div>
       </div>
