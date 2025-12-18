@@ -1,3 +1,5 @@
+// Enhancements for Supabase error handling and organization in the head tag section.
+
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 
@@ -5,7 +7,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // Prevents zooming like a real app
+  userScalable: false,
   themeColor: '#0f172a',
 };
 
@@ -19,29 +21,30 @@ export const metadata: Metadata = {
     title: 'Sturdy',
   },
   icons: {
-    apple: '/icon.png', // Uses the icon for iPhone home screen
+    apple: '/icon.png',
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? '';
+export default function RootLayout({ children }: { children: React.ReactNode; }) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? '';
+
+  // Error handling if Supabase variables are not configured
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase configuration is missing.');
+  }
 
   return (
     <html lang="en">
       <head>
-        {supabaseUrl && supabaseAnonKey ? (
-          <>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="manifest" href="/manifest.json" />
+        {supabaseUrl && supabaseAnonKey && (
+          <> 
             <meta name="sturdy:supabase-url" content={supabaseUrl} />
             <meta name="sturdy:supabase-anon-key" content={supabaseAnonKey} />
           </>
-        ) : null}
+        )}
       </head>
       <body>
         <a
