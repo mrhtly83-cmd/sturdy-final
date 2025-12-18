@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowRight, Sparkles, Timer, Wand2 } from 'lucide-react';
 import Header from './_components/Header';
 import Footer from './_components/Footer';
@@ -34,7 +34,7 @@ export default function LandingPage() {
             muted
             loop
             playsInline
-            poster="/assets/hero-placeholder.jpg" 
+            poster="/assets/family.svg"
             className="absolute inset-0 h-full w-full object-cover opacity-40 transition-opacity duration-1000"
           >
             <source src="/assets/151296-800360307_tiny.mp4" type="video/mp4" />
@@ -83,12 +83,153 @@ export default function LandingPage() {
         </section>
 
         {/* Feature Sections remain similar but use the new theme variables */}
-        <section ref={featuresRef} className="py-24 bg-[#020617]">
-          {/* Feature Grid Logic... */}
+        <section
+          ref={(node) => {
+            featuresRef.current = node;
+          }}
+          className="py-20"
+        >
+          <div className="mx-auto w-full max-w-6xl px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">
+                Features
+              </p>
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                Calm words, on demand
+              </h2>
+              <p className="mt-3 text-sm text-slate-300 sm:text-base">
+                Everything is designed to feel steady, supportive, and fast.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {valueProps.map((p, idx) => (
+                <FeatureCard key={p.title} index={idx} {...p} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <HowItWorks />
+
+        <section className="pb-20">
+          <div className="mx-auto w-full max-w-6xl px-6">
+            <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 text-center shadow-2xl shadow-black/30 backdrop-blur">
+              <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+                Ready to create calmer moments?
+              </h2>
+              <p className="mt-3 text-sm text-slate-300 sm:text-base">
+                Start your free trial and generate your first calm script.
+              </p>
+              <div className="mx-auto mt-6 grid max-w-md gap-3 sm:grid-cols-2">
+                <PrimaryButton href="/auth/signup" className="w-full">
+                  Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+                </PrimaryButton>
+                <Link
+                  href="/create"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-teal-500/50"
+                >
+                  Open the app
+                </Link>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+type ValueProp = {
+  title: string;
+  description: string;
+  Icon: React.ComponentType<{ className?: string }>;
+};
+
+function useInViewOnce<T extends Element>(options?: IntersectionObserverInit) {
+  const [node, setNode] = useState<T | null>(null);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    if (!node || inView) return;
+    const observer = new IntersectionObserver((entries) => {
+      const first = entries[0];
+      if (first?.isIntersecting) setInView(true);
+    }, options);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [inView, node, options]);
+
+  return { ref: setNode, inView };
+}
+
+function FeatureCard({ title, description, Icon, index }: ValueProp & { index: number }) {
+  const { ref, inView } = useInViewOnce<HTMLDivElement>({ threshold: 0.2 });
+  return (
+    <div
+      ref={ref}
+      className={[
+        'rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur',
+        'shadow-[0_18px_60px_rgba(0,0,0,0.35)]',
+        'transition duration-500 ease-out will-change-transform',
+        'hover:scale-[1.02] hover:bg-white/7 hover:shadow-[0_28px_90px_rgba(0,0,0,0.45)]',
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
+      ].join(' ')}
+      style={{ transitionDelay: `${index * 40}ms` }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-2xl bg-teal-500/15 p-2 ring-1 ring-teal-400/20">
+          <Icon className="h-5 w-5 text-teal-200" />
+        </div>
+        <div>
+          <p className="text-base font-semibold text-white">{title}</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">{description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorks() {
+  const { ref, inView } = useInViewOnce<HTMLElement>({ threshold: 0.15 });
+
+  return (
+    <section ref={ref} className="pb-20">
+      <div className="mx-auto w-full max-w-6xl px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">
+            How it works
+          </p>
+          <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+            Three steps, then you’re ready
+          </h2>
+          <p className="mt-3 text-sm text-slate-300 sm:text-base">
+            Answer a few questions. Get a calm script. Save it for later.
+          </p>
+        </div>
+
+        <div
+          className={[
+            'mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3',
+            'transition-all duration-700 ease-out',
+            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3',
+          ].join(' ')}
+        >
+          {[
+            { step: 'Step 1', title: 'Answer 3 questions', desc: 'Kids, tone, and what’s happening right now.' },
+            { step: 'Step 2', title: 'Get a calm script', desc: 'AI generates language designed to reduce conflict.' },
+            { step: 'Step 3', title: 'Use & save', desc: 'Copy it, speak it, and save to your journal.' },
+          ].map((s) => (
+            <div key={s.step} className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">{s.step}</p>
+              <p className="mt-3 text-base font-semibold text-white">{s.title}</p>
+              <p className="mt-2 text-sm text-slate-300">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
