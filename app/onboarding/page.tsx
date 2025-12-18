@@ -159,7 +159,7 @@ export default function OnboardingPage() {
           <OutlineButton type="button" onClick={() => router.push('/manifesto')}>
             Read the Manifesto
           </OutlineButton>
-          <PrimaryButton type="button" onClick={finish}>
+          <PrimaryButton onClick={finish}>
             <span className="inline-flex items-center gap-2">
               Continue <ArrowRight className="h-5 w-5" />
             </span>

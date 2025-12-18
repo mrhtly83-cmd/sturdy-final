@@ -40,9 +40,10 @@ export default function PrimaryButton(props: LinkVariantProps | ButtonVariantPro
     );
   }
 
-  const { children, className = '', ...rest } = props;
+  const { children, className = '', type, ...rest } = props;
   return (
     <button
+      type={type ?? 'button'}
       {...rest}
       className={[
         baseClassName,
