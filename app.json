@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Sturdy Parents",
+    "slug": "sturdy-parents",
+    "scheme": "sturdy-parents",
+    "ios": {
+      "bundleIdentifier": "com.sturdy.parents"
+    },
+    "android": {
+      "package": "com.sturdy.parents"
+    },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ]
+  }
+}
