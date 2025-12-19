@@ -1,8 +1,8 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { useEffect } from 'react';
-import { useRouter, Stack } from 'expo-router'; // Updated import
-import { supabase } from '../src/utils/supabaseClient'; // Updated import
+import { useRouter, Stack, useSegments } from 'expo-router'; // Updated imports
+import { supabase } from '@/src/utils/supabaseClient'; // Updated import
 import { SafeAreaProvider } from 'react-native-safe-area-context'; // Safe area provider
 import { View } from 'react-native'; // Import View for wrapping children
 
@@ -30,10 +30,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
   const router = useRouter(); // Initialize useRouter
+  const segments = useSegments(); // Get current segments
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => { // Added types to parameters
-      if (!session && router.pathname !== '/(auth)/login') {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => { // Use types for parameters
+      if (!session && segments[0] !== '(auth)') { // Check segment instead of pathname
         router.replace('/(auth)/login'); // Redirect to login if no session
       } else if (session) {
         router.replace('/(tabs)'); // Redirect to tabs if logged in
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
     return () => {
       subscription.unsubscribe(); // Clean up subscription on component unmount
     };
-  }, [router]);
+  }, [router, segments]); // Include segments in dependency array
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? '';

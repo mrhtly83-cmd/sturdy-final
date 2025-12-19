@@ -3,7 +3,7 @@
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-    "skipLibCheck": true, // Ensuring this is set to true
+    "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
@@ -18,8 +18,9 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".", // Added baseUrl
     "paths": {
-      "@/*": ["./src/*"] // Mapping @/* to ./src/*
+      "@/*": ["*"] // Changed paths mapping
     }
   },
   "include": [
@@ -30,6 +31,6 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", ".next"] // Adding to exclude list
+  "exclude": ["node_modules", ".next"]
 }
 
