@@ -10,16 +10,16 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.86",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.87.1",
     "ai": "^3.4.33",
     "expo": "^54.0.30",
-    "firebase": "^12.6.0",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
     "openai": "^4.73.0",
-    "react": "19.2.1",
-    "react-dom": "19.2.1",
-    "react-native": "^0.83.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "^0.71.8",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
@@ -34,3 +34,4 @@
     "typescript": "^5"
   }
 }
+
