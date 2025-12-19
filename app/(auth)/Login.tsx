@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { supabase } from '../_utils/supabaseClient'; // Updated import statement
-import { TailwindProvider } from 'nativewind';
+import { supabase } from '../_utils/supabaseClient';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -13,10 +12,20 @@ const Login = () => {
     setLoading(true);
     try {
       await GoogleSignin.hasPlayServices();
-      const { idToken } = await GoogleSignin.signIn();
-      const { error } = await supabase.auth.signInWithIdToken({ idToken });
+      const userInfo = await GoogleSignin.signIn();
+      const token = userInfo?.data?.idToken; // Accessing idToken correctly
+
+      if (token) {
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+          token: token, // Using the token from Google
+      });
 
       if (error) throw new Error(error.message);
+        // Handle successful sign-in (e.g., navigate to another screen)
+      } else {
+        console.error('No token found!');
+      }
     } catch (error) {
       console.error('Google Sign-In Error:', error);
     } finally {
@@ -34,7 +43,6 @@ const Login = () => {
   };
 
   return (
-    <TailwindProvider>
       <SafeAreaView className="flex-1 bg-blue-50 p-4">
         {loading && <ActivityIndicator size="large" color="#0000ff" />}
         <View className="flex-1 justify-center">
@@ -71,7 +79,6 @@ const Login = () => {
           </View>
         </View>
       </SafeAreaView>
-    </TailwindProvider>
   );
 };
 
