@@ -1,7 +1,9 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Session, AuthChangeEvent } from '@supabase/supabase-js'; // Ensure you import these
-import { supabase } from './_utils/supabaseClient';
+import { useEffect } from 'react'; // Ensure useEffect is imported
+import { useRouter } from 'expo-router'; // Added import
+import { SupabaseClient } from '@supabase/supabase-js'; // Ensure SupabaseClient is imported
+import { supabase } from '@/utils/supabaseClient'; // Updated import
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -26,6 +28,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode; }) {
+  const router = useRouter(); // Initialize useRouter
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        router.replace('/(auth)/login'); // Redirect to login if no session
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe(); // Clean up subscription on component unmount
+    };
+  }, [router]);
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY ?? '';
 
@@ -57,5 +73,4 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
     </html>
   );
 }
-
 
