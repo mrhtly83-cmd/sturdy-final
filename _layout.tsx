@@ -1,9 +1,10 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { useEffect } from 'react'; // Ensure useEffect is imported
-import { useRouter } from 'expo-router'; // Added import
-import { SupabaseClient } from '@supabase/supabase-js'; // Ensure SupabaseClient is imported
-import { supabase } from '@/utils/supabaseClient'; // Updated import
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router'; // Updated import
+import { supabase } from '../src/utils/supabaseClient'; // Updated import
+import { SafeAreaProvider } from 'react-native-safe-area-context'; // Safe area provider
+import { ThemeProvider } from './path/to/ThemeProvider'; // Ensure ThemeProvider is imported
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -32,8 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
+      if (!session && router.pathname !== '/(auth)/login') {
         router.replace('/(auth)/login'); // Redirect to login if no session
+      } else if (session) {
+        router.replace('/(tabs)'); // Redirect to tabs if logged in
       }
     });
 
@@ -62,15 +65,18 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
         )}
       </head>
       <body>
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-black focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white focus:outline-none focus:ring-4 focus:ring-teal-400/60"
-        >
-          Skip to main content
-        </a>
-        {children}
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <a
+              href="#main"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-black focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white focus:outline-none focus:ring-4 focus:ring-teal-400/60"
+            >
+              Skip to main content
+            </a>
+            {children}
+          </ThemeProvider>
+        </SafeAreaProvider>
       </body>
     </html>
   );
 }
-
