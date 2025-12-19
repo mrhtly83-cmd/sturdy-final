@@ -2,10 +2,14 @@
   "name": "sturdy-final",
   "version": "0.1.0",
   "private": true,
+  "main": "expo-router/entry",
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
-    "start": "next start",
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
     "lint": "eslint"
   },
   "dependencies": {
@@ -42,3 +46,4 @@
     "typescript": "^5"
   }
 }
+
