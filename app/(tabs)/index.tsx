@@ -1,59 +1,46 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '@/src/utils/supabaseClient'; // Ensure this path is correct
 import { TailwindProvider } from 'nativewind';  // Assuming NativeWind is set up
 
-const index = () => {
+const Dashboard = () => {
   const insets = useSafeAreaInsets();
-  const [dailyTip, setDailyTip] = useState<string | null>(null);
+  const [dailyTip, setDailyTip] = useState('Welcome back! Your AI parenting partner is ready to help.'); // Default tip
   const [loading, setLoading] = useState(true);
 
-  const fetchDailyTip = async () => {
-    try {
-      const response = await fetch('https://your-api-url/chat-proxy', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userMessage: 'Give me a daily parenting tip' }),
-      });
-
-      const data = await response.json();
-      setDailyTip(data.reply);
-    } catch (error) {
-      console.error('Error fetching tip:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchDailyTip();
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Error fetching session:', error);
+      }
+      if (!session) {
+        console.log('User not logged in');
+      }
+      // You can fetch daily tips here if desired
+    };
+
+    checkSession();
   }, []);
 
   return (
     <TailwindProvider>
-      <View style={{ padding: insets.top }}>
-        <Text className="text-2xl font-bold">Sturdy Parents Dashboard</Text>
-        
-        <View className="mt-4 p-4 bg-blue-100 rounded-lg">
+      <SafeAreaView className="flex-1 p-4" style={{ paddingTop: insets.top }}>
+        <Text className="text-2xl font-bold">Hello, [Parent Name]</Text>
+        <View className="mt-6">
           {loading ? (
             <ActivityIndicator size="large" color="#0000ff" />
           ) : (
-            <Text className="text-xl">{dailyTip}</Text>
+            <Text className="text-lg">{dailyTip}</Text>
           )}
         </View>
-
         <View className="mt-6">
-          <Text className="text-lg font-semibold">Premium Features</Text>
-          <View className="flex-row justify-between mt-2">
-            <Button title="Feature 1" onPress={() => { /* Handle tap */ }} />
-            <Button title="Feature 2" onPress={() => { /* Handle tap */ }} />
-          </View>
+          <Button title="Ask Anything" onPress={() => {/* navigation logic to chat screen */}} />
         </View>
-      </View>
+      </SafeAreaView>
     </TailwindProvider>
   );
 };
 
-export default index;
+export default Dashboard;
