@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { supabase } from '../supabaseClient'; // Adjust the import based on your project structure
+import { supabase } from '../_utils/supabaseClient'; // Updated import statement
 import { TailwindProvider } from 'nativewind';
 
 const Login = () => {
@@ -50,9 +50,6 @@ const Login = () => {
             value={email} 
             onChangeText={setEmail} 
             keyboardType="email-address" 
-To apply the suggested edit to your previous code, you need to integrate the import statement into the existing code structure. Without the previous code provided, I'll show you how to structure the code with the import statement included.
-
-Here's an example of how you might adjust the code:
           />
           <TextInput 
             className="border rounded-lg p-2 mb-4" 
@@ -79,3 +76,4 @@ Here's an example of how you might adjust the code:
 };
 
 export default Login;
+
