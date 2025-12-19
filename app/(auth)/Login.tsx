@@ -1,86 +1,52 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { supabase } from '../_utils/supabaseClient';
+import { supabase } from '../_utils/supabaseClient'; // Correct path
 
-const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+export default function Login() {
   const [loading, setLoading] = useState(false);
-  
-  const signInWithGoogle = async () => {
+
+  async function handleGoogleLogin() {
     setLoading(true);
     try {
-      await GoogleSignin.hasPlayServices();
+      // 1. Get the token from Google
       const userInfo = await GoogleSignin.signIn();
-      const token = userInfo?.data?.idToken; // Accessing idToken correctly
+      const token = userInfo.data?.idToken;
 
-      if (token) {
-      const { data, error } = await supabase.auth.signInWithIdToken({
+      if (!token) throw new Error('No ID Token found');
+
+      // 2. Pass the token to the correct Supabase method
+      const { error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-          token: token, // Using the token from Google
+        token: token,
       });
 
-      if (error) throw new Error(error.message);
-        // Handle successful sign-in (e.g., navigate to another screen)
-      } else {
-        console.error('No token found!');
-      }
-    } catch (error) {
-      console.error('Google Sign-In Error:', error);
+      if (error) alert(error.message);
+    } catch (error: any) {
+      alert(error.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleEmailPasswordSignIn = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signIn({ email, password });
-    if (error) {
-      console.error('Email/Password Sign-In Error:', error);
-    }
-    setLoading(false);
-  };
+  }
 
   return (
-      <SafeAreaView className="flex-1 bg-blue-50 p-4">
-        {loading && <ActivityIndicator size="large" color="#0000ff" />}
-        <View className="flex-1 justify-center">
-          <Text className="text-3xl font-bold text-center mb-6">Welcome to Sturdy Parents</Text>
-          
-          <TouchableOpacity className="bg-blue-500 p-4 rounded-full mb-4" onPress={signInWithGoogle}>
-            <Text className="text-white text-center">Sign in with Google</Text>
-          </TouchableOpacity>
+    <SafeAreaView className="flex-1 bg-white justify-center px-6">
+      <View className="items-center mb-10">
+        <Text className="text-3xl font-bold text-sturdy-blue">Sturdy Parents</Text>
+        <Text className="text-gray-500 mt-2">Your AI Parenting Partner</Text>
+      </View>
 
-          <TextInput 
-            className="border rounded-lg p-2 mb-2" 
-            placeholder="Email" 
-            value={email} 
-            onChangeText={setEmail} 
-            keyboardType="email-address" 
-          />
-          <TextInput 
-            className="border rounded-lg p-2 mb-4" 
-            placeholder="Password" 
-            value={password} 
-            onChangeText={setPassword} 
-            secureTextEntry 
-          />
-
-          <Button title="Sign In" onPress={handleEmailPasswordSignIn} />
-
-          <View className="flex-row justify-between mt-4">
-            <TouchableOpacity>
-              <Text className="text-blue-500">Forgot Password?</Text>
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Text className="text-blue-500">Sign Up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </SafeAreaView>
+      <TouchableOpacity 
+        onPress={handleGoogleLogin}
+        disabled={loading}
+        className="bg-sturdy-blue p-4 rounded-xl items-center"
+      >
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text className="text-white font-bold text-lg">Login with Google</Text>
+        )}
+      </TouchableOpacity>
+    </SafeAreaView>
   );
-};
-
-export default Login;
-
+}
