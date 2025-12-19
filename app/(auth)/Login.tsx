@@ -50,7 +50,9 @@ const Login = () => {
             value={email} 
             onChangeText={setEmail} 
             keyboardType="email-address" 
-            autoCapitalize="none" 
+To apply the suggested edit to your previous code, you need to integrate the import statement into the existing code structure. Without the previous code provided, I'll show you how to structure the code with the import statement included.
+
+Here's an example of how you might adjust the code:
           />
           <TextInput 
             className="border rounded-lg p-2 mb-4" 
