@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,9 +22,11 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".", // Added baseUrl
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"] // Changed paths mapping
+      "@/*": [
+        "*"
+      ]
     }
   },
   "include": [
@@ -31,6 +37,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", ".next"]
+  "exclude": [
+    "node_modules",
+    ".next"
+  ],
+  "extends": "expo/tsconfig.base"
 }
-
