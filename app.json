@@ -4,10 +4,16 @@
     "slug": "sturdy-parents",
     "scheme": "sturdy-parents",
     "ios": {
-      "bundleIdentifier": "com.sturdy.parents"
+      "bundleIdentifier": "com.sturdy.parents",
+      "jsEngine": "hermes"
     },
     "android": {
-      "package": "com.sturdy.parents"
+      "package": "com.sturdy.parents",
+      "jsEngine": "hermes"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
     },
     "plugins": [
       "@react-native-google-signin/google-signin"
