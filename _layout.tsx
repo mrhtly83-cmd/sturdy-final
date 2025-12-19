@@ -1,10 +1,10 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { useEffect } from 'react';
-import { useRouter } from 'expo-router'; // Updated import
+import { useRouter, Stack } from 'expo-router'; // Updated import
 import { supabase } from '../src/utils/supabaseClient'; // Updated import
 import { SafeAreaProvider } from 'react-native-safe-area-context'; // Safe area provider
-import { ThemeProvider } from './path/to/ThemeProvider'; // Ensure ThemeProvider is imported
+import { View } from 'react-native'; // Import View for wrapping children
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
   const router = useRouter(); // Initialize useRouter
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => { // Added types to parameters
       if (!session && router.pathname !== '/(auth)/login') {
         router.replace('/(auth)/login'); // Redirect to login if no session
       } else if (session) {
@@ -66,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
       </head>
       <body>
         <SafeAreaProvider>
-          <ThemeProvider>
+          <View>
             <a
               href="#main"
               className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-black focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-white focus:outline-none focus:ring-4 focus:ring-teal-400/60"
@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode; })
               Skip to main content
             </a>
             {children}
-          </ThemeProvider>
+          </View>
         </SafeAreaProvider>
       </body>
     </html>
