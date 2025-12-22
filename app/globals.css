@@ -24,25 +24,21 @@ body {
 
 /* Animations */
 @keyframes sturdyFloat {
-
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
-
   50% {
     transform: translate3d(0, -10px, 0);
   }
 }
 
 @keyframes sturdyGlow {
-
   0%,
   100% {
     opacity: 0.35;
     transform: scale(0.98);
   }
-
   50% {
     opacity: 0.6;
     transform: scale(1.04);
@@ -54,7 +50,6 @@ body {
     opacity: 0;
     transform: translate3d(0, 10px, 0) scale(0.96);
   }
-
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
@@ -66,7 +61,6 @@ body {
     opacity: 0;
     transform: translate3d(0, 14px, 0);
   }
-
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
@@ -77,7 +71,6 @@ body {
   0% {
     opacity: 0;
   }
-
   100% {
     opacity: 1;
   }
@@ -87,7 +80,6 @@ body {
   0% {
     transform: translateX(-100%);
   }
-
   100% {
     transform: translateX(120%);
   }
@@ -127,3 +119,4 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
   animation: sturdyShimmer 1.6s ease-in-out infinite;
 }
+
