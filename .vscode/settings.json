@@ -1,12 +1,13 @@
 {
-  "deno.enable": true,
+  "deno.enable": false,
   "deno.enablePaths": [
     "supabase/functions"
   ],
   "deno.lint": true,
-  "deno.unstable": true,
+  "deno.unstable": [],
   "editor.formatOnSave": true,
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
-  }
+  },
+  "css.lint.unknownAtRules": "ignore"
 }
