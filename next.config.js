@@ -9,6 +9,9 @@ const nextConfig = {
     "react-native-gesture-handler",
     "react-native-reanimated",
     "react-native-screens",
+    // Add these two lines for NativeWind v4:
+    "nativewind",
+    "react-native-css-interop",
   ],
 
   webpack: (config) => {

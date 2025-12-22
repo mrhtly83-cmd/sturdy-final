@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+// Add this import to load Tailwind/NativeWind styles
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Sturdy",
