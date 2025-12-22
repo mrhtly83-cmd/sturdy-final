@@ -45,5 +45,12 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "typescript": "^5"
+  },
+  "react-native": {
+    "node:crypto": "./empty-module.js",
+    "crypto": "./empty-module.js",
+    "stream": "./empty-module.js",
+    "buffer": "./empty-module.js",
+    "app/api": "./empty-module.js"
   }
 }

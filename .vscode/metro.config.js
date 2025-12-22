@@ -1,25 +1,21 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
-const path = require("path");
+const exclusionList = require("metro-config/src/defaults/exclusionList");
 
 const config = getDefaultConfig(__dirname);
 
-// 1. Define the path to our empty file
-const emptyModule = path.resolve(__dirname, "empty-module.js");
+// 1. Completely ignore the API folder so Expo Router doesn't find it
+config.resolver.blockList = exclusionList([
+  /.*\/app\/api\/.*/,
+  /.*\/supabase\/functions\/.*/,
+]);
 
-// 2. Force Metro to resolve "node:crypto" to our empty file
+// 2. If it SOMEHOW finds it, force it to resolve 'node:crypto' to empty
 config.resolver.extraNodeModules = {
-    ...config.resolver.extraNodeModules,
-    "node:crypto": emptyModule,
-    "crypto": emptyModule,
-    "stream": emptyModule,
-    "buffer": emptyModule,
+  ...config.resolver.extraNodeModules,
+  "node:crypto": require.resolve("./empty-module.js"),
+  "crypto": require.resolve("./empty-module.js"),
+  "stream": require.resolve("./empty-module.js"),
 };
-
-// 3. Block the API folder from being watched (Safety net)
-config.resolver.blockList = [
-    /\/app\/api\/.*/,
-    /\/supabase\/functions\/.*/,
-];
 
 module.exports = withNativeWind(config, { input: "./app/globals.css" });

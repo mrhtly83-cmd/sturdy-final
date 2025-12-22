@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 // Import types to fix "parameter implicitly has any type" errors
 import { Session, AuthChangeEvent } from '@supabase/supabase-js';
 // Import from the new local file
-import { supabase } from './_utils/supabaseMobile';
+import { supabase } from './_utils/supabaseClient.native';
 import "./globals.css";
 
 export default function RootLayout() {
