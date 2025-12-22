@@ -5,18 +5,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-import "../../globals.css";
-
-// Remove the TailwindProvider import
-// import { TailwindProvider } from 'nativewind'; // This line is removed
-
-// Ensure components use the className prop for styling
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,66 +22,35 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Animations */
 @keyframes sturdyFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
 }
 
 @keyframes sturdyGlow {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.98);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.04);
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50% { opacity: 0.6; transform: scale(1.04); }
 }
 
 @keyframes sturdyPop {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
+  0% { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.96); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
 @keyframes calmFadeUp {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+  0% { opacity: 0; transform: translate3d(0, 14px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes calmFadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @keyframes sturdyShimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(120%); }
 }
 
 .sturdy-grain::before {
@@ -130,4 +89,3 @@ body {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
   animation: sturdyShimmer 1.6s ease-in-out infinite;
 }
-
