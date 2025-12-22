@@ -1,8 +1,10 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Session, AuthChangeEvent } from '@supabase/supabase-js'; // Import types
-import { supabase } from './_utils/supabaseMobile'; // Import from the new local file
+// Import types to fix "parameter implicitly has any type" errors
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+// FIX: Import from the new local file we just created in Step 1
+import { supabase } from './_utils/supabaseMobile'; 
 import "./globals.css"; 
 
 export default function RootLayout() {
@@ -10,7 +12,7 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => {
-    // Add types to event and session
+    // We added the types (AuthChangeEvent, Session) to the variables below
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       
       if (!session && segments[0] !== '(auth)') {
