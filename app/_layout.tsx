@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { supabase } from '@/src/utils/supabaseClient'; // Ensure this path matches your project structure
-import "../global.css"; // Ensure your CSS import matches your setup
+import "./globals.css"; // Ensure your CSS import matches your setup
 
 export default function RootLayout() {
   const router = useRouter();
