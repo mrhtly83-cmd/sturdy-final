@@ -1,8 +1,10 @@
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-// FIX: Changed alias '@/' to relative path '../' so Metro can find the file
-import { supabase } from '../src/utils/supabaseClient';
+// Import types to fix "parameter implicitly has any type" errors
+import { Session, AuthChangeEvent } from '@supabase/supabase-js';
+// Import from the new local file
+import { supabase } from './_utils/supabaseMobile';
 import "./globals.css";
 
 export default function RootLayout() {
@@ -10,13 +12,11 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => {
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // If no session and not in the (auth) group, redirect to login
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+
       if (!session && segments[0] !== '(auth)') {
         router.replace('/(auth)/Login');
       }
-      // If session exists and user is trying to login, redirect to tabs
       else if (session && segments[0] === '(auth)') {
         router.replace('/(tabs)');
       }
