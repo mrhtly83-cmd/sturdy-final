@@ -1,19 +1,16 @@
 import type { Metadata } from "next";
-import "./globals.css"; // <--- This line is the key!
+import type { ReactNode } from "react";
+import "./globals.css"; // Add this line
 
 export const metadata: Metadata = {
-  title: "Sturdy Parents",
+  title: "Sturdy",
   description: "Design the words that calm your home",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
