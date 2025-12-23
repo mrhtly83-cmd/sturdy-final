@@ -9,19 +9,14 @@ const openai = new OpenAI({
 
 export const runtime = 'nodejs';
 
-type Mode = 'script' | 'coparent';
 type Tone = 'Gentle' | 'Balanced' | 'Firm';
 
 const MAX_MESSAGE_CHARS = 1600;
-const MAX_SITUATION_CHARS = 900;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 12;
 
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 12; // per IP per minute
-
-type RateState = {
-  windowStart: number;
-  count: number;
-};
+type RateState = { windowStart: number; count: number };
+const rateLimitMap = new Map<string, RateState>();
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -35,36 +30,34 @@ const getClientIp = (req: Request) => {
   return (
     req.headers.get('x-real-ip') ||
     req.headers.get('cf-connecting-ip') ||
-    req.headers.get('x-vercel-forwarded-for') ||
     'unknown'
   );
 };
 
-const rateLimit = (key: string) => {
-  const g = globalThis as unknown as { __sturdyRateLimit?: Map<string, RateState> };
-  if (!g.__sturdyRateLimit) g.__sturdyRateLimit = new Map();
-  const store = g.__sturdyRateLimit;
-
+const checkRateLimit = (ip: string) => {
   const now = Date.now();
-  const existing = store.get(key);
-  if (!existing || now - existing.windowStart >= RATE_LIMIT_WINDOW_MS) {
-    store.set(key, { windowStart: now, count: 1 });
-    return { ok: true, retryAfterMs: 0, remaining: RATE_LIMIT_MAX - 1 };
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now - record.windowStart >= RATE_LIMIT_WINDOW_MS) {
+    rateLimitMap.set(ip, { windowStart: now, count: 1 });
+    return { ok: true, retryAfter: 0 };
   }
 
-  if (existing.count >= RATE_LIMIT_MAX) {
-    const retryAfterMs = RATE_LIMIT_WINDOW_MS - (now - existing.windowStart);
-    return { ok: false, retryAfterMs, remaining: 0 };
+  if (record.count >= RATE_LIMIT_MAX) {
+    return { 
+      ok: false, 
+      retryAfter: Math.ceil((RATE_LIMIT_WINDOW_MS - (now - record.windowStart)) / 1000) 
+    };
   }
 
-  existing.count += 1;
-  return { ok: true, retryAfterMs: 0, remaining: RATE_LIMIT_MAX - existing.count };
+  record.count += 1;
+  return { ok: true, retryAfter: 0 };
 };
 
 const jsonError = (message: string, status = 400, headers?: HeadersInit) => {
   return new Response(JSON.stringify({ error: message }), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', ...headers },
+    headers: { 'content-type': 'application/json', ...headers },
   });
 };
 
@@ -74,7 +67,6 @@ const getBearer = (req: Request) => {
   return match?.[1] ?? null;
 };
 
-// --- STRUGGLE-SPECIFIC RULES ---
 const STRUGGLE_RULES: { [key: string]: string } = {
   'Big Emotions': 'Rule: Be the calm container. Focus on naming the feeling and staying present, not problem-solving.',
   'Aggression': 'Rule: Be firm on safety, soft on feelings. Stop the behavior immediately, then validate the underlying emotion.',
@@ -84,24 +76,17 @@ const STRUGGLE_RULES: { [key: string]: string } = {
   'School & Anxiety': 'Rule: Accept the worry, do not dismiss it. Provide specific, predictable routine steps to build security.',
 };
 
-
 export async function POST(req: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return jsonError('Server misconfigured: missing OPENAI_API_KEY.', 500);
   }
 
   const ip = getClientIp(req);
-  const bucket = rateLimit(`generate-script:${ip}`);
-  if (!bucket.ok) {
-    const retrySeconds = Math.max(1, Math.ceil(bucket.retryAfterMs / 1000));
+  const limit = checkRateLimit(ip);
+  if (!limit.ok) {
     return jsonError('Too many requests. Please try again shortly.', 429, {
-      'retry-after': String(retrySeconds),
+      'retry-after': String(limit.retryAfter),
     });
-  }
-
-  const contentType = req.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    return jsonError('Expected application/json body.', 415);
   }
 
   let body: unknown;
@@ -110,8 +95,6 @@ export async function POST(req: Request) {
   } catch {
     return jsonError('Invalid JSON body.', 400);
   }
-
-  // Use destructured variables with default fallbacks to prevent undefined errors
   const safeBody = isRecord(body) ? body : {};
 
   const { 
@@ -125,158 +108,86 @@ export async function POST(req: Request) {
     authToken = null,
   } = safeBody;
 
-  const safeMode: Mode = mode === 'coparent' ? 'coparent' : 'script';
-  const safeTone: Tone = tone === 'Gentle' || tone === 'Firm' ? tone : 'Balanced';
   const safeMessage = asString(message, '').trim();
-  const safeChildAge = asString(childAge, 'Unknown');
-  const safeGender = asString(gender, 'Neutral');
-  const safeStruggle = asString(struggle, 'General');
-  const safeProfile = asString(profile, 'Neurotypical');
-
-  if (!safeMessage) return jsonError('Message is required.', 400);
+  const safeMode = mode === 'coparent' ? 'coparent' : 'script';
+  const safeTone = (['Gentle', 'Balanced', 'Firm'].includes(asString(tone, '')) ? tone : 'Balanced') as Tone;
+  
+  if (!safeMessage) return jsonError('Message/Situation is required.', 400);
   if (safeMessage.length > MAX_MESSAGE_CHARS) return jsonError('Message is too long.', 413);
 
-  // --- BILLING/USAGE ENFORCEMENT (requires Supabase service key) ---
-  // If SUPABASE_SERVICE_ROLE_KEY is configured and the user is logged in, enforce plan limits server-side.
+  const token = getBearer(req) || (typeof authToken === 'string' ? authToken : null);
   const admin = getSupabaseAdmin();
-  const bearer = getBearer(req);
-  const tokenFromBody = typeof authToken === 'string' ? authToken : null;
-  const token = bearer ?? tokenFromBody;
 
   if (admin && token) {
-    const {
-      data: { user },
-      error: authErr,
-    } = await admin.auth.getUser(token);
-    if (authErr || !user) return jsonError('Invalid session.', 401);
+    const { data: { user }, error: authErr } = await admin.auth.getUser(token);
+    
+    if (!authErr && user) {
+      const { data: ent } = await admin
+        .from('entitlements')
+        .select('plan, scripts_used')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    const now = new Date();
-    const { data: ent, error: entErr } = await admin
-      .from('entitlements')
-      .select('plan, period_start, period_end, scripts_used, journal')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (entErr) return jsonError(entErr.message, 500);
-    const planId = (ent?.plan as PlanId | undefined) ?? null;
-    // If user has no entitlement record yet, fall back to client-side free trial.
-    // Once entitlements are provisioned via Stripe webhook, limits are enforced here.
-    if (!planId) {
-      // continue without plan enforcement
-    } else {
-      const plan = PLANS[planId];
-      if (!plan) return jsonError('Invalid plan. Please contact support.', 500);
-
-      if (plan.scriptsIncluded !== 'unlimited') {
-        const periodStart = ent?.period_start ? new Date(ent.period_start) : null;
-        const periodEnd = ent?.period_end ? new Date(ent.period_end) : null;
-        const scriptsUsed = Number(ent?.scripts_used ?? 0);
-
-        const inPeriod =
-          periodStart && periodEnd
-            ? now >= periodStart && now <= periodEnd
-            : false;
-
-        // If not in a valid period, require entitlements refresh via webhook/admin.
-        if (!inPeriod) {
-          return jsonError('Your plan period needs refresh. Please retry in a moment.', 409);
+      if (ent) {
+        const plan = PLANS[ent.plan as PlanId];
+        if (plan && plan.scriptsIncluded !== 'unlimited') {
+           if ((ent.scripts_used || 0) >= plan.scriptsIncluded) {
+             return jsonError('Plan limit reached. Please upgrade.', 402);
+           }
+           admin.from('entitlements').update({ scripts_used: (ent.scripts_used || 0) + 1 }).eq('user_id', user.id).then();
         }
-
-        if (scriptsUsed >= plan.scriptsIncluded) {
-          return jsonError('You’ve reached your script limit for this period.', 402);
-        }
-
-        // Reserve one usage immediately to prevent parallel abuse.
-        const { error: upErr } = await admin
-          .from('entitlements')
-          .update({ scripts_used: scriptsUsed + 1 })
-          .eq('user_id', user.id);
-        if (upErr) return jsonError('Unable to update usage. Please retry.', 500);
       }
     }
   }
 
-  let SYSTEM_PROMPT = '';
-  let USER_MESSAGE = '';
+  let systemPrompt = '';
+  let userMessage = '';
 
   if (safeMode === 'coparent') {
-    // --- MODE 2: CO-PARENTING TEXT REWRITER ---
-    SYSTEM_PROMPT = `
+    systemPrompt = `
       You are 'Sturdy Co-Parent', a conflict-resolution expert.
-      Your goal is to rewrite the user's angry/frustrated text message to their co-parent (ex-partner).
-      RULES: Remove all emotion, sarcasm, and blame. Keep it "BIFF": Brief, Informative, Friendly, Firm.
-      Output ONLY the rewritten text message. No intro, no explanations.
+      Rewrite the user's text to be BIFF: Brief, Informative, Friendly, Firm.
+      Remove sarcasm, blame, and emotion. Output ONLY the rewritten text.
     `;
-    USER_MESSAGE = safeMessage;
-    
+    userMessage = safeMessage;
   } else {
-    // --- MODE 1: PARENTING SCRIPT (Hardened Logic) ---
+    const struggleLogic = STRUGGLE_RULES[asString(struggle, 'General')] || 'Rule: Connection before correction.';
+    const profileNote = profile !== 'Neurotypical' ? `Child is ${profile}. Keep language concrete and simple.` : '';
     
-    // 1. TONE ADJUSTMENT RULES
-    const TONE_ADJUSTMENT = `
-      The parent has requested a script with a "${safeTone}" tone.
-      - If "Gentle": Prioritize empathy. Use phrases like "I see," "I wonder," and "Let's explore." Focus on connection.
-      - If "Firm": Use directives and clear expectations. Use phrases like "I expect," "The rule is," and "We must." Focus on boundaries.
-    `;
-
-    // 2. PROFILE ADJUSTMENT RULES
-    const PROFILE_ADJUSTMENT = profile === 'Neurotypical' ? '' : `
-      IMPORTANT: The child has a "${safeProfile}" profile.
-      - Scripts must be short, direct, and explicit. Avoid abstract language.
-      - Always offer sensory or movement alternatives if the struggle is about big emotions.
-    `;
-    
-    // 3. CORE STRUGGLE LOGIC
-    const STRUGGLE_LOGIC = STRUGGLE_RULES[safeStruggle] || 'Rule: Connection before correction.';
-    
-    // 4. FINAL SYSTEM PROMPT (4 Sections Required for Front-End)
-    SYSTEM_PROMPT = `
-      You are 'Sturdy Parent', a therapeutic AI coach providing comprehensive, actionable advice.
-
-      CORE PHILOSOPHY: Connection before correction. Always validate the feeling before fixing the behavior.
+    systemPrompt = `
+      You are 'Sturdy Parent', an empathetic parenting coach.
+      CORE PHILOSOPHY: ${struggleLogic}
+      TONE: ${safeTone}
+      CONTEXT: Child is ${gender}, Age: ${childAge}, Struggle: ${struggle}. ${profileNote}
       
-      ${STRUGGLE_LOGIC} 
-      ${PROFILE_ADJUSTMENT}
-      ${TONE_ADJUSTMENT}
-
-      CONTEXT: Child is ${safeGender}, Age: ${safeChildAge}, Struggle: ${safeStruggle}.
-      
-      Your response MUST be formatted strictly with the following four sections, separated by triple hashtags (###) with a double line break before and after.
-      
-      SECTION 1: SCRIPT (The exact words to say, 2-3 sentences, using the requested tone.)
-      
+      Your response MUST use the following format with triple hashtags (###) separators:
+      SECTION 1: SCRIPT (The exact words to say, 2-3 sentences max)
       ###
-      
-      SECTION 2: SUMMARY (A 1-sentence title or summary of the *strategy* used, e.g., "The Connection First Strategy")
-      
+      SECTION 2: SUMMARY (1 sentence strategy title)
       ###
-      
-      SECTION 3: WHY IT WORKS (A bulleted list of 2-3 short, actionable tips explaining the psychology and technique. Must use * for bullets.)
-      
+      SECTION 3: WHY IT WORKS (2-3 bullet points starting with *)
       ###
-      
-      SECTION 4: TROUBLESHOOTING (A bulleted list of 2 points that proactively answers common "what if" questions for this struggle, e.g., "What if they keep saying NO?". Must use * for bullets.)
+      SECTION 4: TROUBLESHOOTING (2 bullet points starting with * for "what if")
     `;
-
-    const situation = safeMessage.length > MAX_SITUATION_CHARS ? `${safeMessage.slice(0, MAX_SITUATION_CHARS)}…` : safeMessage;
-    USER_MESSAGE = `Situation: ${situation}. Generate the full structured response.`;
+    userMessage = `Situation: ${safeMessage}. Generate the script.`;
   }
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o-mini', 
       stream: true,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: USER_MESSAGE },
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
       ],
     });
 
-    const stream = OpenAIStream(response);
+    // Fix: Cast response to 'any' to avoid strict TypeScript version mismatch between ai SDK and OpenAI
+    const stream = OpenAIStream(response as any);
     return new StreamingTextResponse(stream);
-  } catch (e: unknown) {
-    const message =
-      e instanceof Error ? e.message : 'Unable to generate right now. Please try again.';
-    return jsonError(message, 502);
+
+  } catch (error: any) {
+    console.error('OpenAI Error:', error);
+    return jsonError('Failed to generate script. Please try again.', 502);
   }
 }
