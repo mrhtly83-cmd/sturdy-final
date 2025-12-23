@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-// Add this import to load Tailwind/NativeWind styles
-import "./globals.css";
+import "./globals.css"; // <--- This line is the key!
 
 export const metadata: Metadata = {
-  title: "Sturdy",
+  title: "Sturdy Parents",
   description: "Design the words that calm your home",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

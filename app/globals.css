@@ -3,19 +3,13 @@
 @tailwind utilities;
 
 :root {
-  /* Base Theme Variables */
   --background: #ffffff;
   --foreground: #171717;
-
-  /* Sturdy Brand Colors (for reference in CSS variables if needed) */
-  --sturdy-teal: #14b8a6;
-  --sturdy-slate: #0f172a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #050505;
-    /* Deep black for calm OLED feel */
+    --background: #050505; /* Deep, calm black */
     --foreground: #ededed;
   }
 }
@@ -25,115 +19,46 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* --- ANIMATIONS --- */
-
 @keyframes sturdyFloat {
-
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
 }
 
 @keyframes sturdyGlow {
-
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.98);
-  }
-
-  50% {
-    opacity: 0.6;
-    transform: scale(1.04);
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50% { opacity: 0.6; transform: scale(1.04); }
 }
 
 @keyframes sturdyPop {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.96);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
+  0% { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.96); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
 }
 
 @keyframes calmFadeUp {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
+  0% { opacity: 0; transform: translate3d(0, 14px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
-@keyframes calmFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes sturdyShimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(120%);
-  }
-}
-
-/* --- UTILITY CLASSES --- */
-
-/* The signature texture overlay */
+/* --- UTILITIES --- */
 .sturdy-grain::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 50;
-  /* Ensure it sits on top but lets clicks through */
   opacity: 0.07;
   mix-blend-mode: overlay;
   background-image:
     radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.35) 0, transparent 25%),
-    repeating-linear-gradient(0deg,
-      rgba(255, 255, 255, 0.08) 0px,
-      rgba(255, 255, 255, 0.08) 1px,
-      transparent 1px,
-      transparent 3px);
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0px, transparent 1px, transparent 3px);
   filter: blur(0.3px);
 }
 
-/* Loading state skeleton */
 .sturdy-skeleton {
   position: relative;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.05);
-}
-
-.sturdy-skeleton::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  animation: sturdyShimmer 1.5s infinite;
 }
