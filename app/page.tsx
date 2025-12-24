@@ -1,27 +1,57 @@
 'use client';
 
 import React from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'next/navigation';
+import { View } from 'react-native';
+import OnboardingScreen from './_components/OnboardingScreen';
+import { Heart, Shield, Sparkles } from 'lucide-react';
 
 export default function Page() {
   const router = useRouter();
 
-  return (
-    <SafeAreaView className="flex-1 bg-white items-center justify-center px-6">
-      <View className="items-center">
-        <Text className="text-4xl font-bold text-blue-600">Sturdy Parents</Text>
-        <Text className="text-gray-500 mt-4 text-center text-lg">
-          The foundation is now stable.
-        </Text>
-      </View>
+  // Navigation handlers
+  const handleGetStarted = () => {
+    router.push('/login');
+  };
 
-      <TouchableOpacity
-        onPress={() => router.push('/login')}
-        className="mt-10 bg-blue-600 py-4 px-10 rounded-xl"
-      >
-        <Text className="text-white font-bold text-lg">Enter App</Text>
-      </TouchableOpacity>
-    </SafeAreaView>
+  const handleSeeManifesto = () => {
+    router.push('/manifesto');
+  };
+
+  // Content Data
+  const stats = [
+    { value: '10k+', label: 'Calm Moments' },
+    { value: '4.9', label: 'Parent Trust' },
+    { value: '24/7', label: 'Support' },
+  ];
+
+  const highlights = [
+    {
+      title: 'Instant Scripts',
+      description: 'Get the exact words for difficult moments in seconds.',
+      icon: Sparkles,
+    },
+    {
+      title: 'Emotional Safety',
+      description: 'Build a sturdy foundation of trust with your child.',
+      icon: Shield,
+    },
+    {
+      title: 'Connection First',
+      description: 'Prioritize the relationship over control.',
+      icon: Heart,
+    },
+  ];
+
+  return (
+    // This View provides the dark background context
+    <View className="flex-1 bg-slate-900">
+      <OnboardingScreen
+        stats={stats}
+        highlights={highlights}
+        onGetStarted={handleGetStarted}
+        onSeeManifesto={handleSeeManifesto}
+      />
+    </View>
   );
 }
